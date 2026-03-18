@@ -1,0 +1,18 @@
+# Node
+backend/node_modules/
+backend/dist/
+backend/coverage/
+
+# Environment
+backend/.env
+backend/.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
