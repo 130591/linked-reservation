@@ -6,7 +6,11 @@ export type DomainErrorCode =
   | 'NAME_REQUIRED'
   | 'INVALID_EMAIL'
   | 'INVALID_PHONE'
-  | 'INVALID_CPF';
+  | 'INVALID_CPF'
+  | 'NO_ROOMS_FOR_CAPACITY'
+  | 'HOTEL_NOT_FOUND'
+  | 'ROOM_NOT_AVAILABLE'
+  | 'SESSION_EXPIRED';
 
 export interface BaseDomainError {
   readonly code: DomainErrorCode;
