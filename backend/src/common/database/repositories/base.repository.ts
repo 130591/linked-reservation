@@ -24,9 +24,13 @@ export abstract class DefaultTypeOrmRepository<T extends DefaultEntity<T>> {
     return await this.repository.save(entity)
   }
 
+  async update(id: string, data: any): Promise<void> {
+    await this.repository.update(id, data)
+  }
+
   async findOneById(id: string, relations?: string[]): Promise<T | null> {
     return this.repository.findOne({
-      where: { id } as FindOptionsWhere<T>,
+      where: { id } as any,
       relations,
     })
   }
@@ -41,7 +45,7 @@ export abstract class DefaultTypeOrmRepository<T extends DefaultEntity<T>> {
 
   async exists(id: string): Promise<boolean> {
     return this.repository.exists({
-      where: { id } as FindOptionsWhere<T>,
+      where: { id } as any,
     })
   }
 
@@ -50,4 +54,6 @@ export abstract class DefaultTypeOrmRepository<T extends DefaultEntity<T>> {
       where: properties,
     })
   }
+
+  protected abstract toDomain(row: any): T
 }
