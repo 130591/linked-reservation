@@ -1,10 +1,10 @@
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
 CREATE TABLE rooms (
   id UUID PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   hotel_id UUID NOT NULL,
-  
   capacity INT NOT NULL,
-
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -12,6 +12,7 @@ CREATE TABLE rooms (
 CREATE TABLE reservation_sessions (
   id UUID PRIMARY KEY,
   hotel_id UUID NOT NULL,
+  staff_id UUID NOT NULL,
   
   check_in DATE NOT NULL,
   check_out DATE NOT NULL,
@@ -29,8 +30,7 @@ CREATE TABLE reservation_sessions (
 
 CREATE TABLE reservations (
   id UUID PRIMARY KEY,
-  
-  room_id UUID NOT NULL,
+  room_id UUID NOT NULL REFERENCES rooms(id),
   session_id UUID NOT NULL REFERENCES reservation_sessions(id),
   
   check_in DATE NOT NULL,
@@ -38,15 +38,17 @@ CREATE TABLE reservations (
   
   status TEXT NOT NULL CHECK(status IN ('HOLD', 'CONFIRMED', 'EXPIRED')),
   expires_at TIMESTAMP NOT NULL,
+  
+  -- Soft Delete: essencial para permitir trocar o quarto na sessão sem conflito
+  deleted_at TIMESTAMP DEFAULT NULL, 
 
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 ALTER TABLE reservations
 ADD CONSTRAINT no_overlapping_reservations
 EXCLUDE USING gist (
-  room_id WITH =, 
+  room_id WITH =,
   tstzrange(check_in::timestamp, check_out::timestamp, '[]') WITH &&
-) WHERE (status IN ('HOLD', 'CONFIRMED'));
+) WHERE (status IN ('HOLD', 'CONFIRMED') AND deleted_at IS NULL);

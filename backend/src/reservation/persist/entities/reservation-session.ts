@@ -17,6 +17,9 @@ export class ReservationSessionEntity extends DefaultEntity<ReservationSessionEn
   @Column()
   guests: number
 
+  @Column({ name: 'staff_id', type: 'uuid' })
+  staffId: string
+
   @Column({
     type: 'text',
     default: "'ACTIVE'",

@@ -5,9 +5,10 @@ import { addTransactionalDataSource } from 'typeorm-transactional'
 import { ConfigService } from '@/common/config/service/config.service'
 import { ReservationRepository } from './repositories/reservation.repository'
 import { ReservationSessionRepository } from './repositories/reservation-session.repository'
+import { RoomRepository } from './repositories/room.repository'
 
 
-const repositories = [ReservationRepository, ReservationSessionRepository]
+const repositories = [ReservationRepository, ReservationSessionRepository, RoomRepository]
 
 @Module({
   imports: [

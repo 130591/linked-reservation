@@ -6,7 +6,7 @@ export type ReservationEntityStatus = 'HOLD' | 'CONFIRMED' | 'EXPIRED'
 
 @Entity('reservations')
 @Exclusion(
-  `USING gist (room_id WITH =, tstzrange(check_in, check_out, '[]') WITH &&) WHERE ("status" IN ('HOLD', 'CONFIRMED'))`,
+  `USING gist (room_id WITH =, tstzrange(check_in, check_out, '[]') WITH &&) WHERE ("status" IN ('HOLD', 'CONFIRMED') AND "deleted_at" IS NULL)`,
 )
 export class ReservationEntity extends DefaultEntity<ReservationEntity> {
 
@@ -22,14 +22,14 @@ export class ReservationEntity extends DefaultEntity<ReservationEntity> {
   @Column({ name: 'check_out', type: 'date' })
   checkOut: Date
 
-  @Column({
-    type: 'text',
-    default: "'HOLD'",
-  })
+  @Column({ type: 'text', default: 'HOLD' })
   status: ReservationEntityStatus
 
   @Column({ name: 'expires_at', type: 'timestamp' })
   expiresAt: Date
+
+  @Column({ name: 'deleted_at', type: 'timestamp', nullable: true })
+  deletedAt: Date | null
 
   static fromDomain(reservation: Reservation): ReservationEntity {
     return new ReservationEntity({
@@ -37,6 +37,7 @@ export class ReservationEntity extends DefaultEntity<ReservationEntity> {
       checkIn: reservation.getPeriod().getStartDate(),
       checkOut: reservation.getPeriod().getEndDate(),
       status: 'HOLD',
+      deletedAt: null
     })
   }
 }
