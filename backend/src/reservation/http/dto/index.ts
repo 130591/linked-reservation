@@ -1,4 +1,3 @@
-
 export type Room = {
   id: string
   name: string
@@ -9,6 +8,10 @@ export type ReservationSession = {
   checkIn: Date
   checkOut: Date
   guests: number
-  availableRooms: Room[] // snapshot ou dinâmico
+  availableRooms: Room[]
   expiresAt: Date
+}
+
+export class SelectRoomDto {
+  roomId: string
 }
