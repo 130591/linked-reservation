@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { GenerateLink } from '@/reservation/core/service'
+import { GenerateLink, ReservationTokenService } from '@/reservation/core/service'
 import { ReservationSessionRepository } from '@/reservation/persist'
 import { ConfigService } from '@/common/config'
 import { createHmac } from 'crypto'
@@ -11,7 +11,7 @@ jest.mock('typeorm-transactional', () => ({
 describe('Scenario: Generate Reservation Link by a Staff Member', () => {
   let service: GenerateLink
   let sessionRepo: jest.Mocked<ReservationSessionRepository>
-  const SECRET = 'test-secret'
+  const SECRET = 'test-secret-with-at-least-32-characters'
 
   beforeEach(async () => {
     sessionRepo = {
@@ -21,6 +21,7 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         GenerateLink,
+        ReservationTokenService,
         {
           provide: ReservationSessionRepository,
           useValue: sessionRepo,
@@ -73,8 +74,10 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
 
       const result = await service.handle(command)
 
+      if (result.isErr()) throw result.error
+
       // Verify token format: payload.sig (base64url)
-      const [payload, sig] = result.token.split('.')
+      const [payload, sig] = result.value.token.split('.')
       expect(payload).toBeDefined()
       expect(sig).toBeDefined()
 

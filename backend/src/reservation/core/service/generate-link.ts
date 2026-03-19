@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common'
-import { createHmac } from 'crypto'
+import { err, ok, Result } from 'neverthrow'
 import { Transactional } from 'typeorm-transactional'
-import { ConfigService } from '@/common/config'
 import { ReservationSessionRepository, ReservationSessionEntity } from '@/reservation/persist'
+import { Period } from '../domain'
+import { ReservationTokenService } from './reservation-token'
+import { DomainError } from '@/common/exceptions'
 
 interface GenerateLinkCommand {
   hotelId: string
@@ -18,32 +20,33 @@ interface GenerateLinkResult {
   expiresAt: Date
 }
 
+type GenerateLinkError = ReturnType<
+  typeof DomainError.CHECK_IN_IN_PAST
+  | typeof DomainError.CHECK_OUT_BEFORE_CHECK_IN
+  | typeof DomainError.MINIMUM_DURATION_NOT_MET
+  | typeof DomainError.MAX_STAYING_DAYS_EXCEEDED
+>
+
 @Injectable()
 export class GenerateLink {
-  private readonly secret = this.config.get('reservationTokenSecret')
-
   constructor(
     private readonly sessionRepo: ReservationSessionRepository,
-    private readonly config: ConfigService
+    private readonly tokenService: ReservationTokenService
   ) { }
 
-  private generateToken(sessionId: string): string {
-    const payload = Buffer.from(sessionId).toString('base64url')
-    const sig = createHmac('sha256', this.secret)
-      .update(payload)
-      .digest('base64url')
-    return `${payload}.${sig}`
-  }
-
-  private generateNewSession(command: GenerateLinkCommand): ReservationSessionEntity {
+  private generateNewSession(
+    command: GenerateLinkCommand,
+    period: Period
+  ): ReservationSessionEntity {
     const expiresAt = new Date()
     expiresAt.setMinutes(expiresAt.getMinutes() + 15)
 
     return new ReservationSessionEntity({
       hotelId: command.hotelId,
-      checkIn: command.checkIn,
-      checkOut: command.checkOut,
+      checkIn: period.getStartDate(),
+      checkOut: period.getEndDate(),
       guests: command.guests,
+      staffId: command.staffId,
       status: 'ACTIVE',
       expiresAt,
       version: 1
@@ -51,15 +54,21 @@ export class GenerateLink {
   }
 
   @Transactional()
-  async handle(command: GenerateLinkCommand): Promise<GenerateLinkResult> {
+  async handle(
+    command: GenerateLinkCommand
+  ): Promise<Result<GenerateLinkResult, GenerateLinkError>> {
+
+    const periodResult = Period.create(command.checkIn, command.checkOut)
+    if (periodResult.isErr()) return err(periodResult.error)
+
     const session = await this.sessionRepo.save(
-      this.generateNewSession(command)
+      this.generateNewSession(command, periodResult.value)
     )
 
-    return {
-      token: this.generateToken(session.id),
+    return ok({
+      token: this.tokenService.generate(session.id),
       sessionId: session.id,
       expiresAt: session.expiresAt
-    }
+    })
   }
 }
