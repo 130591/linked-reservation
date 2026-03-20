@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { GenerateLink, ReservationTokenService } from '@/reservation/core/service'
 import { ReservationSessionRepository } from '@/reservation/persist'
 import { ConfigService } from '@/common/config'
+import { EVENT_BUS } from '@/common/messaging'
+import { FakeEventBus } from '@/reservation/__test__/fixture/events'
 import { createHmac } from 'crypto'
 
 jest.mock('typeorm-transactional', () => ({
@@ -31,6 +33,10 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
           useValue: {
             get: jest.fn().mockReturnValue(SECRET),
           },
+        },
+        {
+          provide: EVENT_BUS,
+          useClass: FakeEventBus,
         },
       ],
     }).compile()
