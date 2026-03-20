@@ -6,6 +6,8 @@ export const environmentSchema = z.enum(['test', 'development', 'production'])
 export const sharedConfigSchema = z.object({
   env: environmentSchema,
   reservationTokenSecret: z.string(),
+  sqsBaseUrl: z.string(),
+  awsRegion: z.string(),
 })
 
 export type Environment = z.infer<typeof environmentSchema>
