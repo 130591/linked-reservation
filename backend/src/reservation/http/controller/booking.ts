@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common'
 import { ReservationTokenGuard } from '@/common/framework/guards/reservation-token.guard'
 import { Session } from '@/common/framework/decorators/session.decorator'
 import { ReservationSessionEntity } from '@/reservation/persist'
-import { SelectRoom, GetAvailableRooms } from '@/reservation/core/service'
+import { GetAvailableRooms, SelectRoom } from '@/reservation/core/service'
 import { SelectRoomDto } from '../dto'
 
 @Controller('booking')
@@ -37,5 +37,9 @@ export class BookingController {
       sessionId: session.id,
       roomId: body.roomId
     })
+
+    if (result.isErr()) throw result.error
+
+    return result.value
   }
 }

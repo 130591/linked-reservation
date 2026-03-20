@@ -1,7 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { IsNull } from 'typeorm'
 import { Transactional } from 'typeorm-transactional'
+import { err, ok, Result } from 'neverthrow'
 import { isExclusionConstraintError } from '@/common/database'
+import { DomainError } from '@/common/exceptions'
 import {
   ReservationRepository,
   ReservationSessionRepository,
@@ -9,11 +11,7 @@ import {
   ReservationEntity,
   RoomRepository
 } from '@/reservation/persist'
-
-export interface SelectRoomCommand {
-  sessionId: string
-  roomId: string
-}
+import { SelectRoomCommand } from '@/reservation/http/dto'
 
 export interface SelectRoomResult {
   reservationId: string
@@ -22,6 +20,12 @@ export interface SelectRoomResult {
   expiresAt: Date
 }
 
+type SelectRoomError = ReturnType<
+  typeof DomainError.SESSION_EXPIRED
+  | typeof DomainError.ROOM_NOT_FOUND
+  | typeof DomainError.ROOM_NOT_AVAILABLE
+>
+
 @Injectable()
 export class SelectRoom {
   constructor(
@@ -29,10 +33,6 @@ export class SelectRoom {
     private readonly reservationRepo: ReservationRepository,
     private readonly roomRepo: RoomRepository
   ) { }
-
-  async update(id: string, data: Partial<ReservationEntity>): Promise<void> {
-    await this.reservationRepo.update(id, data as any)
-  }
 
   private createHold(
     session: ReservationSessionEntity,
@@ -50,10 +50,10 @@ export class SelectRoom {
   }
 
   @Transactional()
-  async handle(command: SelectRoomCommand): Promise<SelectRoomResult> {
+  async handle(command: SelectRoomCommand): Promise<Result<SelectRoomResult, SelectRoomError>> {
     const session = await this.sessionRepo.findOneById(command.sessionId)
     if (!session || session.isExpired()) {
-      throw new BadRequestException('Session expired or invalid')
+      return err(DomainError.SESSION_EXPIRED())
     }
 
     const room = await this.roomRepo.findOneBy({
@@ -62,7 +62,7 @@ export class SelectRoom {
     })
 
     if (!room) {
-      throw new NotFoundException('Room not found for this session')
+      return err(DomainError.ROOM_NOT_FOUND())
     }
 
     const existingHold = await this.reservationRepo.findOne({
@@ -75,12 +75,12 @@ export class SelectRoom {
 
     if (existingHold) {
       if (existingHold.roomId === command.roomId) {
-        return {
+        return ok({
           reservationId: existingHold.id,
           roomId: existingHold.roomId,
           sessionId: session.id,
           expiresAt: existingHold.expiresAt
-        }
+        })
       }
 
       await this.reservationRepo.update(existingHold.id, {
@@ -93,17 +93,17 @@ export class SelectRoom {
         this.createHold(session, command.roomId)
       )
 
-      return {
+      return ok({
         reservationId: hold.id,
         roomId: hold.roomId,
         sessionId: session.id,
         expiresAt: hold.expiresAt
+      })
+    } catch (error) {
+      if (isExclusionConstraintError(error)) {
+        return err(DomainError.ROOM_NOT_AVAILABLE())
       }
-    } catch (err) {
-      if (isExclusionConstraintError(err)) {
-        throw new ConflictException('Room is no longer available')
-      }
-      throw err
+      throw error
     }
   }
 }
