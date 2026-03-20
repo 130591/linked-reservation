@@ -6,14 +6,7 @@ import { Period } from '../domain'
 import { ReservationTokenService } from './reservation-token'
 import { DomainError } from '@/common/exceptions'
 import { EVENT_BUS, EventBus } from '@/common/messaging'
-
-interface GenerateLinkCommand {
-  hotelId: string
-  checkIn: Date
-  checkOut: Date
-  guests: number
-  staffId: string
-}
+import { GenerateLinkCommand } from '@/reservation/http/dto'
 
 interface GenerateLinkResult {
   token: string
