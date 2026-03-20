@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
 import { err, ok, Result } from 'neverthrow'
 import { Transactional } from 'typeorm-transactional'
 import { ReservationSessionRepository, ReservationSessionEntity } from '@/reservation/persist'
 import { Period } from '../domain'
 import { ReservationTokenService } from './reservation-token'
 import { DomainError } from '@/common/exceptions'
+import { EVENT_BUS, EventBus } from '@/common/messaging'
 
 interface GenerateLinkCommand {
   hotelId: string
@@ -20,6 +21,12 @@ interface GenerateLinkResult {
   expiresAt: Date
 }
 
+export interface SessionCreatedEvent {
+  sessionId: string
+  staffId: string
+  expiresAt: Date
+}
+
 type GenerateLinkError = ReturnType<
   typeof DomainError.CHECK_IN_IN_PAST
   | typeof DomainError.CHECK_OUT_BEFORE_CHECK_IN
@@ -31,7 +38,8 @@ type GenerateLinkError = ReturnType<
 export class GenerateLink {
   constructor(
     private readonly sessionRepo: ReservationSessionRepository,
-    private readonly tokenService: ReservationTokenService
+    private readonly tokenService: ReservationTokenService,
+    @Inject(EVENT_BUS) private readonly eventBus: EventBus
   ) { }
 
   private generateNewSession(
@@ -53,6 +61,12 @@ export class GenerateLink {
     })
   }
 
+  // SQS support until 900s — guarantees that it does not overflow
+  private calculateDelay(expiresAt: Date): number {
+    const ms = expiresAt.getTime() - Date.now()
+    return Math.min(Math.max(Math.floor(ms / 1000), 0), 900)
+  }
+
   @Transactional()
   async handle(
     command: GenerateLinkCommand
@@ -63,6 +77,12 @@ export class GenerateLink {
 
     const session = await this.sessionRepo.save(
       this.generateNewSession(command, periodResult.value)
+    )
+
+    await this.eventBus.publish<SessionCreatedEvent>(
+      'reservation.session.expire',
+      { sessionId: session.id, staffId: command.staffId, expiresAt: session.expiresAt },
+      { delaySeconds: this.calculateDelay(session.expiresAt) }
     )
 
     return ok({
