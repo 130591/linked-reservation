@@ -53,6 +53,13 @@ EXCLUDE USING gist (
   tstzrange(check_in::timestamp, check_out::timestamp, '[]') WITH &&
 ) WHERE (status IN ('HOLD', 'CONFIRMED') AND deleted_at IS NULL);
 
+CREATE INDEX idx_reservation_available 
+ON reservations USING GIST (
+  hotel_id,
+  room_id,
+  tstzrange(check_in, check_out, '[]')
+)
+WHERE status IN ('HOLD', 'CONFIRMED') AND deleted_at IS NULL;
 
 CREATE TABLE outbox_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

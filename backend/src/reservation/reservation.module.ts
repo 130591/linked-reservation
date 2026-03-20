@@ -5,12 +5,12 @@ import {
   GenerateLink,
   ConfirmPayment,
   SelectRoom,
-  GetAvailableRooms,
   ReservationTokenService
 } from './core/service'
 import { BookingController } from './http/controller/booking'
 import { ReservationController } from './http/controller/reservation'
 import { ReservationTokenGuard } from '@/common/framework/guards/reservation-token.guard'
+import { GetAvailableRooms } from './core/service/get-available-rooms'
 
 @Module({
   imports: [ReservationPersistenceModule],

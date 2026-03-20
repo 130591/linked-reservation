@@ -1,15 +1,9 @@
 import { Injectable } from '@nestjs/common'
-import { RoomRepository, ReservationRepository } from '@/reservation/persist'
-import { MoreThanOrEqual } from 'typeorm'
+import { RoomRepository } from '@/reservation/persist'
 import { err, ok } from 'neverthrow'
 import { DomainError } from '@/common/exceptions'
+import { GetAvailableRoomsCommand } from '@/reservation/http/dto'
 
-export interface GetAvailableRoomsCommand {
-  hotelId: string
-  checkIn: Date
-  checkOut: Date
-  guests: number
-}
 
 export type GetAvailableRoomsError = {
   type: 'NO_ROOMS_FOR_CAPACITY'
@@ -22,24 +16,19 @@ export type GetAvailableRoomsError = {
 export class GetAvailableRooms {
   constructor(
     private readonly roomRepo: RoomRepository,
-    private readonly reservationRepo: ReservationRepository
   ) { }
 
   async handle(command: GetAvailableRoomsCommand) {
-    const allRooms = await this.roomRepo.find({
-      where: {
-        hotelId: command.hotelId,
-        capacity: MoreThanOrEqual(command.guests)
-      }
-    })
+    const availableRooms = await this.roomRepo.findAvailableByHotel(
+      command.hotelId,
+      command.guests,
+      command.checkIn,
+      command.checkOut
+    )
 
-    if (allRooms.length === 0) {
+    if (availableRooms.length === 0) {
       return err(DomainError.NO_ROOMS_FOR_CAPACITY(command.guests))
     }
-
-    const activeReservations = await this.reservationRepo.findActiveReservations(command.checkIn, command.checkOut)
-    const occupiedRoomIds = new Set(activeReservations.map(res => res.roomId))
-    const availableRooms = allRooms.filter(room => !occupiedRoomIds.has(room.id))
 
     return ok(availableRooms)
   }
