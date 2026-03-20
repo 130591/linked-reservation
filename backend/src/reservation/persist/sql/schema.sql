@@ -52,3 +52,18 @@ EXCLUDE USING gist (
   room_id WITH =,
   tstzrange(check_in::timestamp, check_out::timestamp, '[]') WITH &&
 ) WHERE (status IN ('HOLD', 'CONFIRMED') AND deleted_at IS NULL);
+
+
+CREATE TABLE outbox_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  queue VARCHAR NOT NULL,
+  payload JSONB NOT NULL,
+  delay_seconds INT NOT NULL DEFAULT 0,
+  published_at TIMESTAMP DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Worker read only not published, ordered by creation
+CREATE INDEX idx_outbox_unpublished 
+  ON outbox_events (created_at) 
+  WHERE published_at IS NULL;

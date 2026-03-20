@@ -24,8 +24,8 @@ export abstract class DefaultTypeOrmRepository<T extends DefaultEntity<T>> {
     return await this.repository.save(entity)
   }
 
-  async update(id: string, data: any): Promise<void> {
-    await this.repository.update(id, data)
+  async update(criteria: string | FindOptionsWhere<T>, data: any) {
+    return await this.repository.update(criteria, data)
   }
 
   async findOneById(id: string, relations?: string[]): Promise<T | null> {
