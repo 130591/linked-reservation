@@ -4,6 +4,11 @@ import { ReservationRepository, ReservationSessionRepository } from '@/reservati
 import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { initializeTransactionalContext } from 'typeorm-transactional'
 
+import { FakeEventBus } from '@/reservation/__test__/fixture/events'
+import { EVENT_BUS } from '@/common/messaging'
+
+import { ConfigService } from '@/common/config'
+
 jest.mock('typeorm-transactional', () => ({
   Transactional: () => (target: any, key: any, descriptor: any) => descriptor,
 }))
@@ -12,6 +17,8 @@ describe('Scenario: Reservation Payment Confirmation', () => {
   let service: ConfirmPayment
   let reservationRepo: jest.Mocked<ReservationRepository>
   let sessionRepo: jest.Mocked<ReservationSessionRepository>
+  let eventBus: FakeEventBus
+  let configService: jest.Mocked<ConfigService>
 
   beforeEach(async () => {
     reservationRepo = {
@@ -21,6 +28,10 @@ describe('Scenario: Reservation Payment Confirmation', () => {
     sessionRepo = {
       findOneById: jest.fn(),
       save: jest.fn(),
+    } as any
+    eventBus = new FakeEventBus()
+    configService = {
+      get: jest.fn().mockReturnValue('http://localhost:3000')
     } as any
 
     const module: TestingModule = await Test.createTestingModule({
@@ -34,6 +45,14 @@ describe('Scenario: Reservation Payment Confirmation', () => {
           provide: ReservationSessionRepository,
           useValue: sessionRepo,
         },
+        {
+          provide: ConfigService,
+          useValue: configService,
+        },
+        {
+          provide: EVENT_BUS,
+          useValue: eventBus,
+        }
       ],
     }).compile()
 
@@ -48,10 +67,20 @@ describe('Scenario: Reservation Payment Confirmation', () => {
       const reservation = {
         id: reservationId,
         sessionId: sessionId,
+        roomId: 'room-1',
+        checkIn: new Date('2026-10-10'),
+        checkOut: new Date('2026-10-15'),
         status: 'HOLD',
         expiresAt: new Date(Date.now() + 1000 * 60 * 5), // Expires in 5 min
       } as any
-      const session = { id: sessionId, status: 'ACTIVE' } as any
+      const session = { 
+        id: sessionId, 
+        status: 'ACTIVE',
+        hotelId: 'hotel-123',
+        hotelName: 'Grand Hotel',
+        guests: 2,
+        customer: { name: 'John Doe', phone: '123456789' }
+      } as any
 
       reservationRepo.findOneById.mockResolvedValue(reservation)
       sessionRepo.findOneById.mockResolvedValue(session)
@@ -62,6 +91,13 @@ describe('Scenario: Reservation Payment Confirmation', () => {
       expect(session.status).toBe('COMPLETED')
       expect(reservationRepo.save).toHaveBeenCalled()
       expect(sessionRepo.save).toHaveBeenCalled()
+
+      expect(eventBus.published).toHaveLength(1)
+      expect(eventBus.published[0].payload).toEqual(expect.objectContaining({
+        reservationId,
+        hotelName: 'Grand Hotel',
+        bookingLink: 'http://localhost:3000/reservation/res-123'
+      }))
     })
 
     it('When the payment is confirmed after the HOLD expiration, then the reservation must be expired and payment rejected', async () => {

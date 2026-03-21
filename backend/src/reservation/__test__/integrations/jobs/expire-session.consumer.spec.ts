@@ -2,6 +2,7 @@ import { ExpireSessionConsumer } from '@/reservation/jobs/expire-session.consume
 import { FakeReservationRepository, FakeSessionRepository } from '@/reservation/__test__/fixture/repos'
 import { buildMessage, buildSession, buildReservation } from '@/reservation/__test__/fixture/helpers'
 import { FakeEventBus } from '@/reservation/__test__/fixture/events'
+import { EventQueues } from '@/common/events'
 
 jest.mock('typeorm-transactional', () => ({
   Transactional: () => (target: any, key: any, descriptor: any) => descriptor,
@@ -12,15 +13,18 @@ describe('Scenario: Expire a Reservation Session after timeout', () => {
   let sessionRepo: FakeSessionRepository
   let reservationRepo: FakeReservationRepository
   let eventBus: FakeEventBus
+  let configService: any
 
   beforeEach(() => {
     sessionRepo = new FakeSessionRepository()
     reservationRepo = new FakeReservationRepository()
     eventBus = new FakeEventBus()
+    configService = { get: jest.fn().mockReturnValue('http://localhost:3000') }
 
     consumer = new ExpireSessionConsumer(
       sessionRepo as any,
       reservationRepo as any,
+      configService,
       eventBus
     )
   })
@@ -53,8 +57,16 @@ describe('Scenario: Expire a Reservation Session after timeout', () => {
 
       expect(eventBus.published).toHaveLength(1)
       expect(eventBus.published[0]).toEqual({
-        queue: 'reservation.session.expired',
-        payload: { sessionId, staffId },
+        queue: EventQueues.SESSION_EXPIRED,
+        payload: {
+          sessionId,
+          staffId,
+          hotelName: 'Grand Hotel',
+          checkIn: '2030-06-01T00:00:00.000Z',
+          checkOut: '2030-06-05T00:00:00.000Z',
+          expiredReason: 'TIMEOUT',
+          newSessionUrl: 'http://localhost:3000/admin/sessions/new?hotelId=hotel-1'
+        },
         options: undefined,
       })
     })

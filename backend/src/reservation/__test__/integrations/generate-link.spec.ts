@@ -31,7 +31,10 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn().mockReturnValue(SECRET),
+            get: jest.fn().mockImplementation((key) => {
+              if (key === 'frontendUrl') return 'http://localhost:3000'
+              return SECRET
+            }),
           },
         },
         {
@@ -47,6 +50,8 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
   describe('Given that a staff member wants to send a reservation link to a customer', () => {
     const command = {
       hotelId: 'hotel-uuid',
+      hotelName: 'Grand Hotel',
+      customerName: 'John Doe',
       checkIn: new Date('2030-12-01'),
       checkOut: new Date('2030-12-05'),
       guests: 2,
@@ -56,6 +61,11 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
     it('When they request the link generation, then the system must create a new active session in the database', async () => {
       sessionRepo.save.mockResolvedValue({
         id: 'session-uuid',
+        hotelId: command.hotelId,
+        hotelName: command.hotelName,
+        checkIn: command.checkIn,
+        checkOut: command.checkOut,
+        customer: { name: command.customerName },
         expiresAt: new Date(),
       } as any)
 
@@ -75,6 +85,11 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
       const sessionId = 'session-uuid'
       sessionRepo.save.mockResolvedValue({
         id: sessionId,
+        hotelId: command.hotelId,
+        hotelName: command.hotelName,
+        checkIn: command.checkIn,
+        checkOut: command.checkOut,
+        customer: { name: command.customerName },
         expiresAt: new Date(),
       } as any)
 
@@ -114,6 +129,32 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
       expect(savedSession.expiresAt.getTime()).toBe(expectedExpiration.getTime())
 
       jest.useRealTimers()
+    })
+
+    it('And it must publish a SESSION_LINK_GENERATED event with the enriched payload', async () => {
+      const eventBus = (service as any).eventBus as FakeEventBus
+      sessionRepo.save.mockResolvedValue({
+        id: 'session-uuid',
+        hotelId: command.hotelId,
+        hotelName: command.hotelName,
+        checkIn: command.checkIn,
+        checkOut: command.checkOut,
+        customer: { name: command.customerName },
+        expiresAt: new Date(),
+      } as any)
+
+      await service.handle(command)
+
+      const event = eventBus.published.find(e => e.queue === 'session.link_generated')
+      expect(event).toBeDefined()
+      expect(event?.payload).toEqual(expect.objectContaining({
+        sessionId: 'session-uuid',
+        hotelName: command.hotelName,
+        customerName: command.customerName,
+        checkIn: command.checkIn.toISOString(),
+        checkOut: command.checkOut.toISOString(),
+        bookingLink: expect.stringMatching(/http:\/\/localhost:3000\/reservation\?token=.+/)
+      }))
     })
   })
 })
