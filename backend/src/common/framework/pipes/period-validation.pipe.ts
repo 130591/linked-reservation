@@ -1,5 +1,6 @@
 import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common'
-import { LeaderboardPeriod } from '../../../leaderboards/app/domain/types'
+
+export type LeaderboardPeriod = 'weekly' | 'monthly'
 
 const VALID_PERIODS: LeaderboardPeriod[] = ['weekly', 'monthly']
 
