@@ -1,0 +1,18 @@
+{{! templates/reservation.reminder/whatsapp.hbs }}
+Olá, {{name customerName}}! 👋
+
+⏰ *Lembrete de reserva* — {{hotelName}}
+
+Sua estadia está chegando:
+
+📅 Check-in: {{formatDate checkIn "DD [de] MMMM [de] YYYY"}}
+📅 Check-out: {{formatDate checkOut "DD [de] MMMM [de] YYYY"}}
+🛏 Quarto: {{roomName}}
+👥 Hóspedes: {{guests}}
+
+{{#if bookingLink}}
+📋 Acesse sua reserva:
+{{bookingLink}}
+{{/if}}
+
+Até breve! 🏨

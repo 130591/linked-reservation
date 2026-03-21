@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.1014.0",
     "@aws-sdk/client-sqs": "^3.1013.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",
@@ -30,6 +31,7 @@
     "@ssut/nestjs-sqs": "^3.0.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
+    "dayjs": "^1.11.20",
     "neverthrow": "^8.2.0",
     "pg": "^8.18.0",
     "reflect-metadata": "^0.2.2",
