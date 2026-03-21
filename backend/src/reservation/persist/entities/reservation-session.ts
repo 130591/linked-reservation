@@ -8,6 +8,9 @@ export class ReservationSessionEntity extends DefaultEntity<ReservationSessionEn
   @Column({ name: 'hotel_id', type: 'uuid' })
   hotelId: string
 
+  @Column({ name: 'hotel_name', type: 'varchar' })
+  hotelName: string
+
   @Column({ name: 'check_in', type: 'date' })
   checkIn: Date
 

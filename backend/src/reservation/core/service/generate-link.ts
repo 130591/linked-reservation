@@ -7,6 +7,10 @@ import { ReservationTokenService } from './reservation-token'
 import { DomainError } from '@/common/exceptions'
 import { EVENT_BUS, EventBus } from '@/common/messaging'
 import { GenerateLinkCommand } from '@/reservation/http/dto'
+import { EventQueues, SessionLinkGeneratedPayload } from '@/common/events'
+import { ConfigService } from '@/common/config'
+
+import { ReservationInternalQueues } from '@/reservation/events'
 
 interface GenerateLinkResult {
   token: string
@@ -32,6 +36,7 @@ export class GenerateLink {
   constructor(
     private readonly sessionRepo: ReservationSessionRepository,
     private readonly tokenService: ReservationTokenService,
+    private readonly configService: ConfigService,
     @Inject(EVENT_BUS) private readonly eventBus: EventBus
   ) { }
 
@@ -44,10 +49,14 @@ export class GenerateLink {
 
     return new ReservationSessionEntity({
       hotelId: command.hotelId,
+      hotelName: command.hotelName,
       checkIn: period.getStartDate(),
       checkOut: period.getEndDate(),
       guests: command.guests,
       staffId: command.staffId,
+      customer: {
+        name: command.customerName
+      },
       status: 'ACTIVE',
       expiresAt,
       version: 1
@@ -73,13 +82,31 @@ export class GenerateLink {
     )
 
     await this.eventBus.publish<SessionCreatedEvent>(
-      'reservation.session.expire',
+      ReservationInternalQueues.SESSION_EXPIRE,
       { sessionId: session.id, staffId: command.staffId, expiresAt: session.expiresAt },
       { delaySeconds: this.calculateDelay(session.expiresAt) }
     )
 
+    const token = this.tokenService.generate(session.id)
+    const frontendUrl = this.configService.get('frontendUrl')
+
+    await this.eventBus.publish<SessionLinkGeneratedPayload>(
+      EventQueues.SESSION_LINK_GENERATED,
+      {
+        sessionId: session.id,
+        staffId: command.staffId,
+        token,
+        hotelId: session.hotelId,
+        hotelName: session.hotelName,
+        customerName: session.customer?.name || '',
+        checkIn: session.checkIn.toISOString(),
+        checkOut: session.checkOut.toISOString(),
+        bookingLink: `${frontendUrl}/reservation?token=${token}`
+      }
+    )
+
     return ok({
-      token: this.tokenService.generate(session.id),
+      token,
       sessionId: session.id,
       expiresAt: session.expiresAt
     })

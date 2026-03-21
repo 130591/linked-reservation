@@ -8,20 +8,20 @@ import { EVENT_BUS, EventBus } from '@/common/messaging'
 import { ReservationSessionRepository, ReservationRepository } from '@/reservation/persist'
 import { SessionCreatedEvent } from '@/reservation/core/service/generate-link'
 
-export interface SessionExpiredEvent {
-  sessionId: string
-  staffId: string
-}
+import { SessionExpiredPayload, EventQueues } from '@/common/events'
+import { ReservationInternalQueues } from '@/reservation/events'
+import { ConfigService } from '@/common/config'
 
 @Injectable()
 export class ExpireSessionConsumer {
   constructor(
     private readonly sessionRepo: ReservationSessionRepository,
     private readonly reservationRepo: ReservationRepository,
+    private readonly configService: ConfigService,
     @Inject(EVENT_BUS) private readonly eventBus: EventBus
   ) { }
 
-  @SqsMessageHandler('reservation.session.expire')
+  @SqsMessageHandler(ReservationInternalQueues.SESSION_EXPIRE)
   @Transactional()
   async handle(message: Message): Promise<void> {
     const { sessionId, staffId } = JSON.parse(message.Body!) as SessionCreatedEvent
@@ -43,9 +43,19 @@ export class ExpireSessionConsumer {
       { status: 'EXPIRED' }
     )
 
-    await this.eventBus.publish<SessionExpiredEvent>(
-      'reservation.session.expired',
-      { sessionId, staffId }
+    const frontendUrl = this.configService.get('frontendUrl')
+
+    await this.eventBus.publish<SessionExpiredPayload>(
+      EventQueues.SESSION_EXPIRED,
+      { 
+        sessionId,
+        staffId,
+        hotelName: session.hotelName,
+        checkIn: session.checkIn.toISOString(),
+        checkOut: session.checkOut.toISOString(),
+        expiredReason: 'TIMEOUT',
+        newSessionUrl: `${frontendUrl}/admin/sessions/new?hotelId=${session.hotelId}`
+      }
     )
   }
 }

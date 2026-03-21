@@ -1,6 +1,9 @@
 import { ReservationRepository, ReservationSessionRepository } from '@/reservation/persist'
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException, Inject } from '@nestjs/common'
 import { Transactional } from 'typeorm-transactional'
+import { EVENT_BUS, EventBus } from '@/common/messaging'
+import { EventQueues, ReservationConfirmedPayload } from '@/common/events'
+import { ConfigService } from '@/common/config'
 
 interface ConfirmPaymentCommand {
   reservationId: string
@@ -11,7 +14,9 @@ interface ConfirmPaymentCommand {
 export class ConfirmPayment {
   constructor(
     private readonly reservationRepo: ReservationRepository,
-    private readonly sessionRepo: ReservationSessionRepository
+    private readonly sessionRepo: ReservationSessionRepository,
+    private readonly configService: ConfigService,
+    @Inject(EVENT_BUS) private readonly eventBus: EventBus
   ) { }
 
   @Transactional()
@@ -44,6 +49,24 @@ export class ConfirmPayment {
       this.reservationRepo.save(reservation),
       this.sessionRepo.save(session)
     ])
+
+    const frontendUrl = this.configService.get('frontendUrl')
+
+    await this.eventBus.publish<ReservationConfirmedPayload>(
+      EventQueues.RESERVATION_CONFIRMED,
+      {
+        reservationId: reservation.id,
+        hotelId: session.hotelId,
+        roomId: reservation.roomId,
+        checkIn: reservation.checkIn.toISOString(),
+        checkOut: reservation.checkOut.toISOString(),
+        guestName: session.customer?.name ?? 'Cliente',
+        guestPhone: session.customer?.phone ?? '',
+        guestsCount: session.guests,
+        hotelName: session.hotelName,
+        bookingLink: `${frontendUrl}/reservation/${reservation.id}`
+      }
+    )
 
     return {
       reservationId: reservation.id,
