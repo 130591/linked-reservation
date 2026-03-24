@@ -10,7 +10,7 @@ export class SelectRoomCommand {
 
 export class GetAvailableRoomsCommand {
   @IsUUID()
-  hotelId: string
+  stayId: string
 
   @IsDate()
   checkIn: Date

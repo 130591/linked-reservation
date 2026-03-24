@@ -58,7 +58,7 @@ export class SelectRoom {
 
     const room = await this.roomRepo.findOneBy({
       id: command.roomId,
-      hotelId: session.hotelId
+      stayId: session.stayId
     })
 
     if (!room) {

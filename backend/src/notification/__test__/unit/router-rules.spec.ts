@@ -3,7 +3,7 @@ import { RecipientType, NotificationChannel } from '@/notification/event'
 
 const makeRule = (overrides: Partial<RoutingRule> = {}): RoutingRule => ({
   id: 'rule-1',
-  hotelId: 'hotel-1',
+  stayId: 'hotel-1',
   eventType: 'reservation.confirmed',
   channel: 'WHATSAPP',
   recipientType: 'STAFF',
@@ -35,7 +35,7 @@ describe('Scenario: Routing notification rules to channels', () => {
       const router = new RouterRules(rules)
 
       const { decisions, skipped } = router.resolve({
-        hotelId: 'hotel-1',
+        stayId: 'hotel-1',
         eventType: 'reservation.confirmed',
         recipient: makeRecipient(),
         now: new Date('2030-03-15T14:00:00Z') // 2pm — outside quiet hours
@@ -66,7 +66,7 @@ describe('Scenario: Routing notification rules to channels', () => {
       const router = new RouterRules(rules)
 
       const { decisions } = router.resolve({
-        hotelId: 'hotel-1',
+        stayId: 'hotel-1',
         eventType: 'reservation.confirmed',
         recipient: makeRecipient(),
         now: new Date('2030-03-15T14:00:00Z')
@@ -87,7 +87,7 @@ describe('Scenario: Routing notification rules to channels', () => {
       const router = new RouterRules(rules)
 
       const { decisions } = router.resolve({
-        hotelId: 'hotel-1',
+        stayId: 'hotel-1',
         eventType: 'reservation.confirmed',
         recipient: makeRecipient({ phone: undefined }),
         now: new Date('2030-03-15T14:00:00Z')
@@ -116,7 +116,7 @@ describe('Scenario: Quiet hours suppress notifications', () => {
       const router = new RouterRules(rules)
 
       const { decisions } = router.resolve({
-        hotelId: 'hotel-1',
+        stayId: 'hotel-1',
         eventType: 'reservation.confirmed',
         recipient: makeRecipient(),
         now: new Date('2030-03-15T23:00:00Z') // 11pm — inside quiet hours
@@ -129,7 +129,7 @@ describe('Scenario: Quiet hours suppress notifications', () => {
       const router = new RouterRules(rules)
 
       const { decisions } = router.resolve({
-        hotelId: 'hotel-1',
+        stayId: 'hotel-1',
         eventType: 'reservation.confirmed',
         recipient: makeRecipient(),
         now: new Date('2030-03-15T14:00:00Z') // 2pm — outside quiet hours
@@ -149,7 +149,7 @@ describe('Scenario: Quiet hours suppress notifications', () => {
       const router = new RouterRules(rules)
 
       const { decisions } = router.resolve({
-        hotelId: 'hotel-1',
+        stayId: 'hotel-1',
         eventType: 'reservation.confirmed',
         recipient: makeRecipient(),
         now: new Date('2030-03-15T23:30:00Z')
@@ -172,7 +172,7 @@ describe('Scenario: Quiet hours suppress notifications', () => {
       const router = new RouterRules(rules)
 
       const { decisions, skipped } = router.resolve({
-        hotelId: 'hotel-1',
+        stayId: 'hotel-1',
         eventType: 'reservation.confirmed',
         recipient: makeRecipient(),
         now: new Date('2030-03-15T14:00:00Z')

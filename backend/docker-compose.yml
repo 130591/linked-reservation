@@ -24,6 +24,22 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+  redis:
+    image: redis:7-alpine
+    container_name: linked_reservation_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
   localstack:
     image: localstack/localstack
     container_name: linked_reservation_localstack

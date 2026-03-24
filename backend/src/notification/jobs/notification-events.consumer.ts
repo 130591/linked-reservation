@@ -7,7 +7,8 @@ import {
   EventQueues,
   DomainEvents,
   ReservationConfirmedPayload,
-  SessionLinkGeneratedPayload
+  SessionLinkGeneratedPayload,
+  ConversationReplyPayload
 } from '@/common/events'
 import { NotificationRecipient, RecipientType } from '../event'
 
@@ -33,7 +34,7 @@ export class NotificationEventsConsumer {
     }
 
     const recipients = await this.router.route({
-      hotelId: payload.hotelId,
+      stayId: payload.stayId,
       eventType: DomainEvents.RESERVATION_CONFIRMED,
       recipient: guestRecipient,
       now: new Date()
@@ -59,7 +60,7 @@ export class NotificationEventsConsumer {
     }
 
     const recipients = await this.router.route({
-      hotelId: payload.hotelId,
+      stayId: payload.stayId,
       eventType: DomainEvents.SESSION_LINK_GENERATED,
       recipient: staffRecipient,
       now: new Date()
@@ -68,6 +69,24 @@ export class NotificationEventsConsumer {
     await this.notificationService.dispatch({
       type: DomainEvents.SESSION_LINK_GENERATED,
       recipients: recipients,
+      payload: { ...payload }
+    })
+  }
+
+  @SqsMessageHandler(EventQueues.CONVERSATION_REPLY)
+  async handleConversationReply(message: Message): Promise<void> {
+    const payload = JSON.parse(message.Body!) as ConversationReplyPayload
+
+    const customerRecipient: NotificationRecipient = {
+      id: payload.phone,
+      type: RecipientType.CUSTOMER,
+      name: 'Cliente',
+      phone: payload.phone
+    }
+
+    await this.notificationService.dispatch({
+      type: DomainEvents.CONVERSATION_REPLY,
+      recipients: [customerRecipient],
       payload: { ...payload }
     })
   }

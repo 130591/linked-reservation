@@ -5,14 +5,14 @@ import { RoutingRuleEntity } from '../entities/routing-rule'
 @Injectable()
 export class RoutingRuleRepository extends DefaultTypeOrmRepository<RoutingRuleEntity> {
   async findActiveRules(
-    hotelId: string,
+    stayId: string,
     eventType: string,
     recipientType: string
   ): Promise<RoutingRuleEntity[]> {
     return await this.find({
       where: [
-        { hotelId, eventType, recipientType, active: true },
-        { hotelId, eventType, recipientType: 'ALL', active: true }
+        { stayId, eventType, recipientType, active: true },
+        { stayId, eventType, recipientType: 'ALL', active: true }
       ]
     })
   }
@@ -20,7 +20,7 @@ export class RoutingRuleRepository extends DefaultTypeOrmRepository<RoutingRuleE
   protected toDomain(row: any): RoutingRuleEntity {
     return new RoutingRuleEntity({
       id: row.id,
-      hotelId: row.hotelId,
+      stayId: row.stayId,
       eventType: row.eventType,
       channel: row.channel,
       recipientType: row.recipientType,

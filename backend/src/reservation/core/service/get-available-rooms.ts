@@ -20,7 +20,7 @@ export class GetAvailableRooms {
 
   async handle(command: GetAvailableRoomsCommand) {
     const availableRooms = await this.roomRepo.findAvailableByHotel(
-      command.hotelId,
+      command.stayId,
       command.guests,
       command.checkIn,
       command.checkOut

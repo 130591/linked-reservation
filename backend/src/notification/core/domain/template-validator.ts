@@ -14,6 +14,7 @@ const REQUIRED_TEMPLATES: Array<{ eventType: string; channel: string }> = [
   { eventType: DomainEvents.SESSION_LINK_GENERATED, channel: 'EMAIL' },
   { eventType: DomainEvents.RESERVATION_REMINDER, channel: 'WHATSAPP' },
   { eventType: DomainEvents.RESERVATION_REMINDER, channel: 'EMAIL' },
+  { eventType: DomainEvents.CONVERSATION_REPLY, channel: 'WHATSAPP' },
 ]
 
 @Injectable()

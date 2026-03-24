@@ -3,7 +3,7 @@ import { NotificationError, RoutingRuleInvalidError } from './notification-error
 
 export interface RoutingRule {
   id: string
-  hotelId: string
+  stayId: string
   eventType: string
   channel: string
   recipientType: string
@@ -13,7 +13,7 @@ export interface RoutingRule {
 }
 
 export interface RoutingContext {
-  hotelId: string
+  stayId: string
   eventType: string
   recipient: NotificationRecipient,
   now: Date

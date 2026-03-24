@@ -20,8 +20,8 @@ export class NotificationEntity extends DefaultEntity<NotificationEntity> {
   @Column({ type: 'varchar' })
   destination: string
 
-  @Column({ name: 'hotel_id', type: 'uuid' })
-  hotelId: string
+  @Column({ name: 'stay_id', type: 'uuid' })
+  stayId: string
 
   @Column({ name: 'event_type', type: 'varchar' })
   eventType: string                // 'reservation.confirmed' etc

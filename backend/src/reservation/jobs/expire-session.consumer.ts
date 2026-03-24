@@ -50,11 +50,11 @@ export class ExpireSessionConsumer {
       { 
         sessionId,
         staffId,
-        hotelName: session.hotelName,
+        stayName: session.stayName,
         checkIn: session.checkIn.toISOString(),
         checkOut: session.checkOut.toISOString(),
         expiredReason: 'TIMEOUT',
-        newSessionUrl: `${frontendUrl}/admin/sessions/new?hotelId=${session.hotelId}`
+        newSessionUrl: `${frontendUrl}/admin/sessions/new?stayId=${session.stayId}`
       }
     )
   }

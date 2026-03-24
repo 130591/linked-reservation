@@ -66,14 +66,13 @@ export class TemplateRenderer {
     eventType: string,
     channel: string
   ): Result<string, TemplateNotFoundError> {
-    const templateId = `${eventType}.${channel}`
-    const filename = `${templateId}.hbs`
-    const filepath = join(__dirname, '../../templates', filename)
+    const filename = `${channel.toLowerCase()}.hbs`
+    const filepath = join(__dirname, '../../templates', eventType, filename)
 
     try {
       return ok(readFileSync(filepath, 'utf-8'))
     } catch {
-      return err(NotificationError.TEMPLATE_NOT_FOUND(templateId))
+      return err(NotificationError.TEMPLATE_NOT_FOUND(`${eventType}/${channel.toLowerCase()}`))
     }
   }
 

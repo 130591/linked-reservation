@@ -40,7 +40,7 @@ CREATE TABLE notification_templates (
 -- Configuração por hotel + evento + canal
 CREATE TABLE notification_routing_rules (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  hotel_id   UUID NOT NULL,
+  stay_id   UUID NOT NULL,
   event_type VARCHAR NOT NULL,
   channel    VARCHAR NOT NULL,   -- 'WHATSAPP' | 'EMAIL'
   
@@ -54,7 +54,7 @@ CREATE TABLE notification_routing_rules (
   
   created_at TIMESTAMP DEFAULT NOW(),
   
-  UNIQUE (hotel_id, event_type, channel, recipient_type)
+  UNIQUE (stay_id, event_type, channel, recipient_type)
 );
 
 -- Exemplo de dados
