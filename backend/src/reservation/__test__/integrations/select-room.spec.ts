@@ -44,11 +44,11 @@ describe('Scenario: Room Selection in a Reservation Session', () => {
   describe('Given a customer is browsing available rooms with an active session', () => {
     const sessionId = 'ses-123'
     const roomId = 'room-abc'
-    const hotelId = 'hotel-456'
+    const stayId = 'hotel-456'
 
     const session = {
       id: sessionId,
-      hotelId,
+      stayId,
       checkIn: new Date('2030-10-01'),
       checkOut: new Date('2030-10-05'),
       expiresAt: new Date(Date.now() + 15 * 60 * 1000),
@@ -57,7 +57,7 @@ describe('Scenario: Room Selection in a Reservation Session', () => {
 
     it('When they select a valid room for the first time, then a HOLD reservation must be created', async () => {
       sessionRepo.findOneById.mockResolvedValue(session)
-      roomRepo.findOneBy.mockResolvedValue({ id: roomId, hotelId } as any)
+      roomRepo.findOneBy.mockResolvedValue({ id: roomId, stayId } as any)
       reservationRepo.findOne.mockResolvedValue(null)
       reservationRepo.save.mockResolvedValue({ id: 'res-789', roomId, expiresAt: session.expiresAt } as any)
 
@@ -75,7 +75,7 @@ describe('Scenario: Room Selection in a Reservation Session', () => {
       const existingHold = { id: 'res-old', roomId: oldRoomId, sessionId } as any
 
       sessionRepo.findOneById.mockResolvedValue(session)
-      roomRepo.findOneBy.mockResolvedValue({ id: roomId, hotelId } as any)
+      roomRepo.findOneBy.mockResolvedValue({ id: roomId, stayId } as any)
       reservationRepo.findOne.mockResolvedValue(existingHold)
       reservationRepo.save.mockResolvedValue({ id: 'res-new', roomId, expiresAt: session.expiresAt } as any)
 
@@ -92,7 +92,7 @@ describe('Scenario: Room Selection in a Reservation Session', () => {
       const { QueryFailedError } = require('typeorm')
 
       sessionRepo.findOneById.mockResolvedValue(session)
-      roomRepo.findOneBy.mockResolvedValue({ id: roomId, hotelId } as any)
+      roomRepo.findOneBy.mockResolvedValue({ id: roomId, stayId } as any)
       reservationRepo.findOne.mockResolvedValue(null)
 
       const exclusionError = new QueryFailedError('query', [], { message: 'exclusion constraint' })
@@ -124,7 +124,7 @@ describe('Scenario: Room Selection in a Reservation Session', () => {
 
     it('When the room does not belong to the session hotel, then the result must contain ROOM_NOT_FOUND', async () => {
       sessionRepo.findOneById.mockResolvedValue({
-        id: 'ses', hotelId: 'h1', isExpired: () => false
+        id: 'ses', stayId: 'h1', isExpired: () => false
       } as any)
       roomRepo.findOneBy.mockResolvedValue(null)
 

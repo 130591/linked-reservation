@@ -76,8 +76,8 @@ describe('Scenario: Reservation Payment Confirmation', () => {
       const session = { 
         id: sessionId, 
         status: 'ACTIVE',
-        hotelId: 'hotel-123',
-        hotelName: 'Grand Hotel',
+        stayId: 'hotel-123',
+        stayName: 'Grand Hotel',
         guests: 2,
         customer: { name: 'John Doe', phone: '123456789' }
       } as any
@@ -95,7 +95,7 @@ describe('Scenario: Reservation Payment Confirmation', () => {
       expect(eventBus.published).toHaveLength(1)
       expect(eventBus.published[0].payload).toEqual(expect.objectContaining({
         reservationId,
-        hotelName: 'Grand Hotel',
+        stayName: 'Grand Hotel',
         bookingLink: 'http://localhost:3000/reservation/res-123'
       }))
     })
