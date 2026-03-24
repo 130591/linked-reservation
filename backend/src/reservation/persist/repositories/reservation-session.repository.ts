@@ -15,7 +15,8 @@ export class ReservationSessionRepository extends DefaultTypeOrmRepository<Reser
   protected toDomain(row: any): ReservationSessionEntity {
     return new ReservationSessionEntity({
       id: row.id,
-      hotelId: row.hotelId,
+      stayId: row.stayId,
+      stayName: row.stayName,
       staffId: row.staffId,
       checkIn: row.checkIn,
       checkOut: row.checkOut,

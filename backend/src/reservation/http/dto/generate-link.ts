@@ -2,10 +2,10 @@ import { IsDate, IsNumber, IsString, IsUUID } from 'class-validator'
 
 export class GenerateLinkCommand {
   @IsUUID()
-  hotelId: string
+  stayId: string
 
   @IsString()
-  hotelName: string
+  stayName: string
 
   @IsString()
   customerName: string
