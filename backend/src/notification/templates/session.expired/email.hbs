@@ -1,0 +1,57 @@
+{{! templates/session.expired/email.hbs }}
+<!DOCTYPE html>
+<html>
+
+<body style="font-family:sans-serif; max-width:600px; margin:0 auto; color:#1a1a1a;">
+
+  <div style="background:#dc2626; padding:32px; text-align:center;">
+    <h1 style="color:#fff; margin:0;">Sessão Expirada</h1>
+  </div>
+
+  <div style="padding:32px;">
+    <p>
+      O link de reserva gerado para <strong>{{hotelName}}</strong>
+      expirou sem ser concluído.
+    </p>
+
+    <table style="width:100%; border-collapse:collapse; margin:24px 0;">
+      <tr style="background:#f8fafc;">
+        <td style="padding:12px; border:1px solid #e2e8f0;">Check-in</td>
+        <td style="padding:12px; border:1px solid #e2e8f0;">
+          {{formatDate checkIn "DD/MM/YYYY"}}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:12px; border:1px solid #e2e8f0;">Check-out</td>
+        <td style="padding:12px; border:1px solid #e2e8f0;">
+          {{formatDate checkOut "DD/MM/YYYY"}}
+        </td>
+      </tr>
+      <tr style="background:#f8fafc;">
+        <td style="padding:12px; border:1px solid #e2e8f0;">Motivo</td>
+        <td style="padding:12px; border:1px solid #e2e8f0;">
+          {{#if (eq expiredReason "TIMEOUT")}}
+          Cliente não completou dentro do tempo limite
+          {{/if}}
+          {{#if (eq expiredReason "CANCELLED_BY_STAFF")}}
+          Cancelada manualmente
+          {{/if}}
+        </td>
+      </tr>
+    </table>
+
+    <div style="text-align:center; margin:32px 0;">
+      <a href="{{newSessionUrl}}" style="background:#2563eb; color:#fff; padding:14px 28px;
+                border-radius:6px; text-decoration:none; font-weight:bold;">
+        Gerar novo link
+      </a>
+    </div>
+
+    <p style="color:#64748b; font-size:14px;">
+      O quarto voltou a ficar disponível para outros clientes.
+    </p>
+  </div>
+
+</body>
+
+</html>

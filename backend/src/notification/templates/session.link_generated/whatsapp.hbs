@@ -1,0 +1,13 @@
+{{! templates/session.link_generated/whatsapp.hbs }}
+Olá, {{name customerName}}! 👋
+
+🏨 *{{hotelName}}* separou algumas opções de quarto para você!
+
+📅 Check-in: {{formatDate checkIn "DD [de] MMMM [de] YYYY"}}
+📅 Check-out: {{formatDate checkOut "DD [de] MMMM [de] YYYY"}}
+
+Acesse o link abaixo para ver os quartos disponíveis e finalizar sua reserva:
+
+👉 {{bookingLink}}
+
+⚠️ _Este link expira em 15 minutos._

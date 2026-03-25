@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { TypeOrmPersistenceModule } from '@/common/database/persistence/typeorm-persistence.module'
 import { dataSourceOptionsFactory } from '@/common/database/persistence/typeorm-datasource.factory'
+import { NotificationModule } from './notification/notification.module'
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { dataSourceOptionsFactory } from '@/common/database/persistence/typeorm-
           inject: [ConfigService],
           useFactory: dataSourceOptionsFactory,
         }),
+        NotificationModule
       ]
       : []),
   ],

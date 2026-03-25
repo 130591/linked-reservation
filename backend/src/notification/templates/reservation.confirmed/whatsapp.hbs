@@ -1,0 +1,14 @@
+Olá {{name recipient.name}}! 👋
+
+✅ *Reserva confirmada* no {{hotel.name}}
+
+📅 Check-in: {{formatDate checkIn "DD [de] MMMM [de] YYYY"}}
+📅 Check-out: {{formatDate checkOut "DD [de] MMMM [de] YYYY"}}
+🛏 Quarto: {{room.name}}
+👥 Hóspedes: {{guests}}
+
+{{#if bookingLink}}
+🔗 Acesse sua reserva: {{bookingLink}}
+{{/if}}
+
+Qualquer dúvida, estamos aqui! 😊

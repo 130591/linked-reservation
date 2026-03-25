@@ -1,0 +1,17 @@
+{{! templates/session.expired/whatsapp.hbs }}
+⚠️ *Sessão expirada* — {{hotelName}}
+
+O link de reserva para as datas abaixo expirou:
+
+📅 Check-in: {{formatDate checkIn "DD/MM/YYYY"}}
+📅 Check-out: {{formatDate checkOut "DD/MM/YYYY"}}
+
+{{#if (eq expiredReason "TIMEOUT")}}
+⏱ O cliente não completou a reserva dentro do tempo limite.
+{{/if}}
+{{#if (eq expiredReason "CANCELLED_BY_STAFF")}}
+🚫 Sessão cancelada manualmente.
+{{/if}}
+
+Para gerar um novo link:
+{{newSessionUrl}}
