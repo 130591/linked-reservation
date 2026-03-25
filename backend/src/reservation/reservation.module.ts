@@ -11,6 +11,7 @@ import { BookingController } from './http/controller/booking'
 import { ReservationController } from './http/controller/reservation'
 import { ReservationTokenGuard } from '@/common/framework/guards/reservation-token.guard'
 import { GetAvailableRooms } from './core/service/get-available-rooms'
+import { ReservationAPI } from './external-api'
 
 @Module({
   imports: [ReservationPersistenceModule],
@@ -22,15 +23,11 @@ import { GetAvailableRooms } from './core/service/get-available-rooms'
     SelectRoom,
     GetAvailableRooms,
     ReservationTokenService,
-    ReservationTokenGuard // For manual injection if needed, though Usually Guards are self-managed
+    ReservationTokenGuard,
+    ReservationAPI
   ],
   exports: [
-    ConfirmReservation,
-    GenerateLink,
-    ConfirmPayment,
-    SelectRoom,
-    GetAvailableRooms,
-    ReservationTokenService
+    ReservationAPI
   ],
 })
 export class ReservationModule { }

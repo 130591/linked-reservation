@@ -11,13 +11,13 @@ export class NotificationRouter {
 
   async route(event: RoutingContext): Promise<NotificationRecipient[]> {
     const rules = await this.routingRuleRepository.findActiveRules(
-      event.hotelId,
+      event.stayId,
       event.eventType,
       event.recipient.type
     )
 
     const { decisions, skipped } = new RouterRules(rules).resolve({
-      hotelId: event.hotelId,
+      stayId: event.stayId,
       eventType: event.eventType,
       recipient: event.recipient,
       now: new Date()

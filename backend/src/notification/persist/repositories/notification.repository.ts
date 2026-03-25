@@ -15,7 +15,7 @@ export class NotificationRepository extends DefaultTypeOrmRepository<Notificatio
       payload: row.payload,
       renderedBody: row.renderedBody,
       status: row.status,
-      hotelId: row.hotelId,
+      stayId: row.stayId,
       sentAt: row.sentAt,
       failedAt: row.failedAt,
       error: row.error,

@@ -6,9 +6,10 @@ import { ConfigService } from '@/common/config/service/config.service'
 import { ReservationRepository } from './repositories/reservation.repository'
 import { ReservationSessionRepository } from './repositories/reservation-session.repository'
 import { RoomRepository } from './repositories/room.repository'
+import { StayRepository } from './repositories/stay.repository'
 
 
-const repositories = [ReservationRepository, ReservationSessionRepository, RoomRepository]
+const repositories = [ReservationRepository, ReservationSessionRepository, RoomRepository, StayRepository]
 
 @Module({
   imports: [

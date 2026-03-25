@@ -52,15 +52,13 @@ describe('Scenario: Template rendering reliability', () => {
       expect(result.isErr()).toBe(true)
       if (result.isErr()) {
         expect(result.error.code).toBe('TEMPLATE_NOT_FOUND')
-        expect(result.error.templateId).toBe('session.expired.SMS')
+        expect(result.error.templateId).toBe('session.expired/sms')
       }
     })
   })
 
   describe('Given a template exists but contains invalid Handlebars syntax', () => {
     it('When the service tries to render it with bad context, then it should return Err with TEMPLATE_RENDER_FAILED', () => {
-      // Handlebars.compile itself doesn't fail on bad syntax most of the time,
-      // but calling a helper that throws will produce a render error
       readFileSyncMock.mockReturnValue('{{#each items}}{{broken{{/each}}')
 
       const result = renderer.render(
@@ -69,7 +67,6 @@ describe('Scenario: Template rendering reliability', () => {
         { recipient: { name: 'Test', type: 'CUSTOMER' } }
       )
 
-      // Handlebars throws at compile time for truly malformed templates
       expect(result.isErr()).toBe(true)
       if (result.isErr()) {
         expect(['TEMPLATE_RENDER_FAILED', 'TEMPLATE_NOT_FOUND']).toContain(result.error.code)
@@ -80,8 +77,8 @@ describe('Scenario: Template rendering reliability', () => {
   describe('Given one template is missing and another exists', () => {
     it('Then rendering the missing one should fail without affecting the valid one', () => {
       readFileSyncMock
-        .mockImplementationOnce(() => { throw new Error('ENOENT') })  // 1st call: missing
-        .mockImplementationOnce(() => 'Olá {{name recipient.name}}!')   // 2nd call: exists
+        .mockImplementationOnce(() => { throw new Error('ENOENT') })
+        .mockImplementationOnce(() => 'Olá {{name recipient.name}}!')
 
       const missingResult = renderer.render(
         'nonexistent.event',
@@ -89,7 +86,6 @@ describe('Scenario: Template rendering reliability', () => {
         { recipient: { name: 'Test', type: 'CUSTOMER' } }
       )
 
-      // Create a new renderer for the second call to avoid cache
       const renderer2 = new TemplateRenderer()
       const validResult = renderer2.render(
         'reservation.confirmed',

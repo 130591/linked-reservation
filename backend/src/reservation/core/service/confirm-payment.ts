@@ -56,14 +56,14 @@ export class ConfirmPayment {
       EventQueues.RESERVATION_CONFIRMED,
       {
         reservationId: reservation.id,
-        hotelId: session.hotelId,
+        stayId: session.stayId,
         roomId: reservation.roomId,
         checkIn: reservation.checkIn.toISOString(),
         checkOut: reservation.checkOut.toISOString(),
         guestName: session.customer?.name ?? 'Cliente',
         guestPhone: session.customer?.phone ?? '',
         guestsCount: session.guests,
-        hotelName: session.hotelName,
+        stayName: session.stayName,
         bookingLink: `${frontendUrl}/reservation/${reservation.id}`
       }
     )

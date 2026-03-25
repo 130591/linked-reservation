@@ -49,8 +49,8 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
 
   describe('Given that a staff member wants to send a reservation link to a customer', () => {
     const command = {
-      hotelId: 'hotel-uuid',
-      hotelName: 'Grand Hotel',
+      stayId: 'stay-uuid',
+      stayName: 'Grand Hotel',
       customerName: 'John Doe',
       checkIn: new Date('2030-12-01'),
       checkOut: new Date('2030-12-05'),
@@ -61,8 +61,8 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
     it('When they request the link generation, then the system must create a new active session in the database', async () => {
       sessionRepo.save.mockResolvedValue({
         id: 'session-uuid',
-        hotelId: command.hotelId,
-        hotelName: command.hotelName,
+        stayId: command.stayId,
+        stayName: command.stayName,
         checkIn: command.checkIn,
         checkOut: command.checkOut,
         customer: { name: command.customerName },
@@ -73,7 +73,7 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
 
       expect(sessionRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({
-          hotelId: command.hotelId,
+          stayId: command.stayId,
           status: 'ACTIVE',
           guests: command.guests,
           version: 1,
@@ -85,8 +85,8 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
       const sessionId = 'session-uuid'
       sessionRepo.save.mockResolvedValue({
         id: sessionId,
-        hotelId: command.hotelId,
-        hotelName: command.hotelName,
+        stayId: command.stayId,
+        stayName: command.stayName,
         checkIn: command.checkIn,
         checkOut: command.checkOut,
         customer: { name: command.customerName },
@@ -135,8 +135,8 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
       const eventBus = (service as any).eventBus as FakeEventBus
       sessionRepo.save.mockResolvedValue({
         id: 'session-uuid',
-        hotelId: command.hotelId,
-        hotelName: command.hotelName,
+        stayId: command.stayId,
+        stayName: command.stayName,
         checkIn: command.checkIn,
         checkOut: command.checkOut,
         customer: { name: command.customerName },
@@ -149,7 +149,8 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
       expect(event).toBeDefined()
       expect(event?.payload).toEqual(expect.objectContaining({
         sessionId: 'session-uuid',
-        hotelName: command.hotelName,
+        stayId: command.stayId,
+        stayName: command.stayName,
         customerName: command.customerName,
         checkIn: command.checkIn.toISOString(),
         checkOut: command.checkOut.toISOString(),

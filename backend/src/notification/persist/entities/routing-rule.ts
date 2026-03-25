@@ -5,7 +5,7 @@ import { Column, Entity } from 'typeorm'
 @Entity('routing_rule')
 export class RoutingRuleEntity extends DefaultEntity<RoutingRuleEntity> {
   @Column()
-  hotelId: string
+  stayId: string
 
   @Column()
   eventType: string

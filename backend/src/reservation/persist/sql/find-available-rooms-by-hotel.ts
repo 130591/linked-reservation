@@ -2,12 +2,12 @@ export const findAvailableRoomsByHotelSql = `
   SELECT 
     r.id,
     r.name,
-    r.hotel_id as "hotelId",
+    r.stay_id as "stayId",
     r.capacity,
     r.created_at as "createdAt",
     r.updated_at as "updatedAt"
   FROM rooms r
-  WHERE r.hotel_id = $1
+  WHERE r.stay_id = $1
   AND r.capacity >= $2
   AND NOT EXISTS (
     SELECT 1

@@ -12,7 +12,7 @@ import { ConfigService } from '@/common/config'
 
 import { ReservationInternalQueues } from '@/reservation/events'
 
-interface GenerateLinkResult {
+export interface GenerateLinkResult {
   token: string
   sessionId: string
   expiresAt: Date
@@ -24,7 +24,7 @@ export interface SessionCreatedEvent {
   expiresAt: Date
 }
 
-type GenerateLinkError = ReturnType<
+export type GenerateLinkError = ReturnType<
   typeof DomainError.CHECK_IN_IN_PAST
   | typeof DomainError.CHECK_OUT_BEFORE_CHECK_IN
   | typeof DomainError.MINIMUM_DURATION_NOT_MET
@@ -48,8 +48,8 @@ export class GenerateLink {
     expiresAt.setMinutes(expiresAt.getMinutes() + 15)
 
     return new ReservationSessionEntity({
-      hotelId: command.hotelId,
-      hotelName: command.hotelName,
+      stayId: command.stayId,
+      stayName: command.stayName,
       checkIn: period.getStartDate(),
       checkOut: period.getEndDate(),
       guests: command.guests,
@@ -96,8 +96,8 @@ export class GenerateLink {
         sessionId: session.id,
         staffId: command.staffId,
         token,
-        hotelId: session.hotelId,
-        hotelName: session.hotelName,
+        stayId: session.stayId,
+        stayName: session.stayName,
         customerName: session.customer?.name || '',
         checkIn: session.checkIn.toISOString(),
         checkOut: session.checkOut.toISOString(),

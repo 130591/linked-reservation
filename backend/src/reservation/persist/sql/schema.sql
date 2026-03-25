@@ -1,9 +1,18 @@
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
+CREATE TABLE stays (
+  id UUID PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  phone VARCHAR(20) NOT NULL UNIQUE,
+  type VARCHAR(50) NOT NULL DEFAULT 'HOTEL',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE rooms (
   id UUID PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
-  hotel_id UUID NOT NULL,
+  stay_id UUID NOT NULL,
   capacity INT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -11,7 +20,7 @@ CREATE TABLE rooms (
 
 CREATE TABLE reservation_sessions (
   id UUID PRIMARY KEY,
-  hotel_id UUID NOT NULL,
+  stay_id UUID NOT NULL,
   staff_id UUID NOT NULL,
   
   check_in DATE NOT NULL,
@@ -22,6 +31,7 @@ CREATE TABLE reservation_sessions (
   expires_at TIMESTAMP NOT NULL,
   
   customer JSONB,
+  stay_name VARCHAR(255) NOT NULL,
   version INT DEFAULT 1,
 
   created_at TIMESTAMP DEFAULT NOW(),
@@ -55,7 +65,7 @@ EXCLUDE USING gist (
 
 CREATE INDEX idx_reservation_available 
 ON reservations USING GIST (
-  hotel_id,
+  stay_id,
   room_id,
   tstzrange(check_in, check_out, '[]')
 )

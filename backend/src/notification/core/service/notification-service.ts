@@ -81,7 +81,7 @@ export class NotificationService {
         recipientType: recipient.type as any,
         channel,
         destination,
-        hotelId: event.payload.hotelId as string,
+        stayId: event.payload.stayId as string,
         eventType: event.type,
         templateId: `${event.type}.${channel.toLowerCase()}`,
         payload: event.payload,

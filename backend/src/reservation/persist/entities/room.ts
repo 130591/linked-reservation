@@ -6,8 +6,8 @@ export class RoomEntity extends DefaultEntity<RoomEntity> {
   @Column()
   name: string
 
-  @Column({ name: 'hotel_id', type: 'uuid' })
-  hotelId: string
+  @Column({ name: 'stay_id', type: 'uuid' })
+  stayId: string
 
   @Column()
   capacity: number

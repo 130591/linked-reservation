@@ -16,7 +16,7 @@ export class BookingController {
   @Get('rooms')
   async getAvailableRooms(@Session() session: ReservationSessionEntity) {
     const result = await this.getAvailableRoomsService.handle({
-      hotelId: session.hotelId,
+      stayId: session.stayId,
       checkIn: session.checkIn,
       checkOut: session.checkOut,
       guests: session.guests

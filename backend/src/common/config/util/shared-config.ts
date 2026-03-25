@@ -11,6 +11,7 @@ export const sharedConfigSchema = z.object({
   whatsappApiUrl: z.string(),
   whatsappApiKey: z.string(),
   sesFromEmail: z.string(),
+  anthropicApiKey: z.string(),
   frontendUrl: z.string().url(),
 })
 
@@ -27,6 +28,7 @@ export const sharedConfigFactory = (): SharedConfig => {
     whatsappApiUrl: process.env.WHATSAPP_API_URL,
     whatsappApiKey: process.env.WHATSAPP_API_KEY,
     sesFromEmail: process.env.SES_FROM_EMAIL,
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
   })
 

@@ -16,9 +16,9 @@ export class RoomRepository extends DefaultTypeOrmRepository<RoomEntity> {
     return this.findOne({ where })
   }
 
-  async findAvailableByHotel(hotelId: string, guests: number, checkIn: Date, checkOut: Date) {
+  async findAvailableByHotel(stayId: string, guests: number, checkIn: Date, checkOut: Date) {
     const rows = await this.manager.query(findAvailableRoomsByHotelSql, [
-      hotelId,
+      stayId,
       guests,
       checkIn,
       checkOut
@@ -30,7 +30,7 @@ export class RoomRepository extends DefaultTypeOrmRepository<RoomEntity> {
     return new RoomEntity({
       id: row.id,
       name: row.name,
-      hotelId: row.hotelId,
+      stayId: row.stayId,
       capacity: row.capacity,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt

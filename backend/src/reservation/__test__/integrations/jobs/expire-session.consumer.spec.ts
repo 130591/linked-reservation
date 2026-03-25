@@ -61,11 +61,11 @@ describe('Scenario: Expire a Reservation Session after timeout', () => {
         payload: {
           sessionId,
           staffId,
-          hotelName: 'Grand Hotel',
+          stayName: 'Grand Hotel',
           checkIn: '2030-06-01T00:00:00.000Z',
           checkOut: '2030-06-05T00:00:00.000Z',
           expiredReason: 'TIMEOUT',
-          newSessionUrl: 'http://localhost:3000/admin/sessions/new?hotelId=hotel-1'
+          newSessionUrl: 'http://localhost:3000/admin/sessions/new?stayId=hotel-1'
         },
         options: undefined,
       })

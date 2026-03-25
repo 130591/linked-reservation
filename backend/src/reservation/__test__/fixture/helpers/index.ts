@@ -7,8 +7,8 @@ export function buildMessage(body: object) {
 
 export function buildSession(overrides: Partial<ReservationSessionEntity> & { id: string }): ReservationSessionEntity {
   return new ReservationSessionEntity({
-    hotelId: 'hotel-1',
-    hotelName: 'Grand Hotel',
+    stayId: 'hotel-1',
+    stayName: 'Grand Hotel',
     checkIn: new Date('2030-06-01'),
     checkOut: new Date('2030-06-05'),
     guests: 2,

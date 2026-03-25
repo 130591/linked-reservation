@@ -5,11 +5,11 @@ export type SessionStatus = 'ACTIVE' | 'COMPLETED' | 'EXPIRED'
 
 @Entity('reservation_sessions')
 export class ReservationSessionEntity extends DefaultEntity<ReservationSessionEntity> {
-  @Column({ name: 'hotel_id', type: 'uuid' })
-  hotelId: string
+  @Column({ name: 'stay_id', type: 'uuid' })
+  stayId: string
 
-  @Column({ name: 'hotel_name', type: 'varchar' })
-  hotelName: string
+  @Column({ name: 'stay_name', type: 'varchar' })
+  stayName: string
 
   @Column({ name: 'check_in', type: 'date' })
   checkIn: Date
