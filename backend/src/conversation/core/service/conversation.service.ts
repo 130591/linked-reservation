@@ -2,6 +2,8 @@ import { Inject, Injectable, Logger } from '@nestjs/common'
 import { ConversationStateRepository } from '@/conversation/persist'
 import { IntentExtractorService } from './intent-extractor.service'
 import { ConversationFlowService } from './conversation-flow.service'
+import { NotificationChannel } from '@/notification/core/channels/channel.interface'
+import { NOTIFICATION_CHANNELS } from '@/notification/core/channels/channel.interface'
 import {
   CONVERSATION_NOTIFIER,
   ConversationNotifier,
@@ -27,6 +29,8 @@ export class ConversationService {
     private readonly flow: ConversationFlowService,
     private readonly reservationAPI: ReservationAPI,
     private readonly hotelRepo: StayRepository,
+    @Inject(NOTIFICATION_CHANNELS)
+    private readonly notificationChannels: NotificationChannel[],
     @Inject(CONVERSATION_NOTIFIER)
     private readonly notifier: ConversationNotifier
   ) { }
@@ -124,5 +128,30 @@ export class ConversationService {
     )
 
     await this.stateRepo.save({ ...state, step: 'LINK_SENT' })
+  }
+
+  private async sendWhatsAppResponse(phone: string, message: string): Promise<void> {
+    try {
+      // Remove 'whatsapp:' prefix se existir
+      const cleanPhone = phone.replace('whatsapp:', '')
+      
+      // Encontra o WhatsApp channel
+      const whatsappChannel = this.notificationChannels.find(channel => 
+        channel.supports('WHATSAPP')
+      )
+      
+      if (!whatsappChannel) {
+        this.logger.error('WhatsApp channel not found')
+        return
+      }
+      
+      const result = await whatsappChannel.send(cleanPhone, message)
+      
+      if (result.isErr()) {
+        this.logger.error(`Failed to send WhatsApp response to ${phone}:`, result.error)
+      }
+    } catch (error) {
+      this.logger.error(`Failed to send WhatsApp response to ${phone}:`, error)
+    }
   }
 }
