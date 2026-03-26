@@ -1,5 +1,6 @@
 import { NotificationChannel, NotificationRecipient } from '../../event'
 import { NotificationError, RoutingRuleInvalidError } from './notification-error'
+import { err, ok, Result } from 'neverthrow'
 
 export interface RoutingRule {
   id: string
@@ -36,48 +37,40 @@ export class RouterRules {
   ) { }
 
   resolve(context: RoutingContext): RoutingResult {
-    const decisions: RoutingDecision[] = []
-    const skipped: RoutingRuleInvalidError[] = []
+    const results = this.rules.map(rule => 
+      this.evaluate(rule, context))
 
-    for (const rule of this.rules) {
-      const result = this.evaluate(rule, context)
-
-      if (result.type === 'decision') decisions.push(result.value)
-      if (result.type === 'error') skipped.push(result.error)
-      // type === 'skip' → silently ignored (inactive, quiet hours, no destination)
-    }
-
-    return { decisions, skipped }
+      return {
+        decisions: results
+          .filter(isDecision)
+          .map(r => r.value),
+        skipped: results
+          .filter(isError)
+          .map(r => r.error)
+      }
   }
 
-  private evaluate(
+  private evaluate(rule: RoutingRule, context: RoutingContext): EvalResult {
+    if (!rule.active) return skip()
+    const quiet = this.safeQuietHours(rule, context)
+    if (quiet.isErr()) return error(rule.id, quiet.error)
+    if (quiet.value) return skip()
+    const destination = this.resolveDestination(context.recipient, rule.channel)
+    if (!destination) return skip()
+    return decision(rule, destination)
+}
+
+  private safeQuietHours(
     rule: RoutingRule,
     context: RoutingContext
-  ): EvalResult {
-    if (!rule.active) return { type: 'skip' }
-
+  ): Result<boolean, string> {
     try {
-      if (this.isInQuietHours(rule, context.now)) return { type: 'skip' }
-    } catch {
-      return {
-        type: 'error',
-        error: NotificationError.ROUTING_RULE_INVALID(
-          rule.id,
-          `Invalid quiet hours format: '${rule.quietHoursStart}' - '${rule.quietHoursEnd}'`
-        )
-      }
-    }
-
-    const destination = this.resolveDestination(context.recipient, rule.channel)
-    if (!destination) return { type: 'skip' }
-
-    return {
-      type: 'decision',
-      value: {
-        ruleId: rule.id,
-        channel: rule.channel,
-        destination
-      }
+      return ok(this.isInQuietHours(rule, context.now))
+    } catch (e) {
+      return err(`Invalid quiet hours: 
+        ${rule.quietHoursStart} - 
+        ${rule.quietHoursEnd}`
+      )
     }
   }
 
@@ -110,6 +103,34 @@ export class RouterRules {
     return null
   }
 }
+
+  function isDecision(result: EvalResult): result is { type: 'decision', value: RoutingDecision } 
+  {
+    return result.type === 'decision'
+  }
+
+  function isError(result: EvalResult): result is 
+  { type: 'error'; error: RoutingRuleInvalidError } 
+  {
+    return result.type === 'error'
+  }
+
+
+  const skip = (): EvalResult => ({ type: 'skip' })
+
+  const decision = (rule: RoutingRule, destination: string): EvalResult => ({
+    type: 'decision',
+    value: {
+      ruleId: rule.id,
+      channel: rule.channel,
+      destination
+    }
+  })
+
+  const error = (ruleId: string, message: string): EvalResult => ({
+    type: 'error',
+    error: NotificationError.ROUTING_RULE_INVALID(ruleId, message)
+  })
 
 type EvalResult =
   | { type: 'decision'; value: RoutingDecision }

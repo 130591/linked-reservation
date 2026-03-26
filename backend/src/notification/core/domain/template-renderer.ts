@@ -28,22 +28,26 @@ export class TemplateRenderer {
     this.registerHelpers()
   }
 
+
   render(
     eventType: string,
     channel: string,
     context: TemplateContext
   ): Result<string, TemplateNotFoundError | TemplateRenderError> {
     const templateId = `${eventType}.${channel}`
-    const loadResult = this.load(eventType, channel)
 
-    if (loadResult.isErr()) return err(loadResult.error)
-
-    try {
-      return ok(loadResult.value(context))
-    } catch (error) {
-      return err(NotificationError.TEMPLATE_RENDER_FAILED(templateId, String(error)))
+    return this.load(eventType, channel)
+      .andThen((template) =>
+        Result.fromThrowable(
+          () => template(context),
+          (error) =>
+            NotificationError.TEMPLATE_RENDER_FAILED(
+              templateId,
+              String(error)
+            )
+        )()
+      )
     }
-  }
 
   private registerHelpers() {
     Handlebars.registerHelper('formatDate', (date: string, format: string) => {
@@ -69,30 +73,38 @@ export class TemplateRenderer {
     const filename = `${channel.toLowerCase()}.hbs`
     const filepath = join(__dirname, '../../templates', eventType, filename)
 
-    try {
-      return ok(readFileSync(filepath, 'utf-8'))
-    } catch {
-      return err(NotificationError.TEMPLATE_NOT_FOUND(`${eventType}/${channel.toLowerCase()}`))
-    }
+    return Result.fromThrowable(
+      () => readFileSync(filepath, 'utf-8'),
+      () => NotificationError.TEMPLATE_NOT_FOUND(`${eventType}/${channel.toLowerCase()}`)
+    )()
   }
 
   private load(
     eventType: string,
     channel: string
   ): Result<HandlebarsTemplateDelegate, TemplateNotFoundError> {
-    const key = `${eventType}.${channel}`
-    const cached = this.cache.get(key)
-    if (cached) {
-      return ok(cached)
-    }
-
-    const readResult = this.readFile(eventType, channel)
-    if (readResult.isErr()) return err(readResult.error)
-
-    const compiled = Handlebars.compile(readResult.value)
-
-    this.cache.set(key, compiled)
-    this.logger.log(`Template ${key} loaded`)
-    return ok(compiled)
+      const key = `${eventType}.${channel}`
+      const cached = this.cache.get(key)
+      if (cached) return ok(cached)
+      
+      return this.readFile(eventType, channel)
+        .map((content) => {
+          const compiled = Handlebars.compile(content)
+          this.cache.set(key, compiled)
+          this.logger.log(`Template ${key} loaded`)
+          return compiled
+        })
   }
+
+
+
+
+
+
+
+
+
+
+
+
 }
