@@ -16,4 +16,7 @@ export class StayEntity extends DefaultEntity<StayEntity> {
     default: 'HOTEL'
   })
   type: StayType
+
+  @Column({ nullable: true })
+  whatsappNumber: string
 }
