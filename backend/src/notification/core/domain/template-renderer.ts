@@ -7,8 +7,9 @@ import { join } from 'path'
 import { err, ok, Result } from 'neverthrow'
 import { NotificationError, TemplateNotFoundError, TemplateRenderError } from './notification-error'
 
-
 dayjs.locale('pt-br')
+
+const TEMPLATES_DIR = join(process.cwd(), 'src/notification/templates')
 
 export interface TemplateContext {
   recipient: {
@@ -71,7 +72,7 @@ export class TemplateRenderer {
     channel: string
   ): Result<string, TemplateNotFoundError> {
     const filename = `${channel.toLowerCase()}.hbs`
-    const filepath = join(__dirname, '../../templates', eventType, filename)
+    const filepath = join(TEMPLATES_DIR, eventType, filename)
 
     return Result.fromThrowable(
       () => readFileSync(filepath, 'utf-8'),
