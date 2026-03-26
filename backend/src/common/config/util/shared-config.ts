@@ -8,11 +8,14 @@ export const sharedConfigSchema = z.object({
   reservationTokenSecret: z.string(),
   sqsBaseUrl: z.string(),
   awsRegion: z.string(),
+  accessKeyId: z.string(),
+  secretAccessKey: z.string(),
   whatsappApiUrl: z.string(),
   whatsappApiKey: z.string(),
   sesFromEmail: z.string(),
   anthropicApiKey: z.string(),
   frontendUrl: z.string().url(),
+  
   database: z.object({
     host: z.string(),
     port: z.number(),
@@ -32,6 +35,8 @@ export const sharedConfigFactory = (): SharedConfig => {
     reservationTokenSecret: process.env.RESERVATION_TOKEN_SECRET,
     sqsBaseUrl: process.env.SQS_BASE_URL,
     awsRegion: process.env.AWS_REGION,
+    accessKeyId: process.env.ACCESS_KEY_ID,
+    secretAccessKey: process.env.SECRET_ACCESS_KEY,
     whatsappApiUrl: process.env.WHATSAPP_API_URL,
     whatsappApiKey: process.env.WHATSAPP_API_KEY,
     sesFromEmail: process.env.SES_FROM_EMAIL,
