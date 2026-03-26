@@ -6,6 +6,8 @@ import { ConversationStateRepository } from '../../../conversation/persist'
 import { ReservationAPI } from '@/reservation/external-api'
 import { StayRepository, StayEntity } from '@/reservation/persist'
 import { CONVERSATION_NOTIFIER, ConversationNotifier, ConversationState } from '../../core/contract'
+import { NotificationChannel } from '@/notification/core/channels/channel.interface'
+import { NOTIFICATION_CHANNELS } from '@/notification/core/channels/channel.interface'
 import { ok } from 'neverthrow'
 
 describe('Scenario: Full WhatsApp Reservation Flow', () => {
@@ -30,6 +32,12 @@ describe('Scenario: Full WhatsApp Reservation Flow', () => {
     reservationAPI = { generate: jest.fn() } as any
     stayRepo = { findOneById: jest.fn() } as any
     notifier = { reply: jest.fn().mockResolvedValue(undefined) } as any
+    
+    // Mock do WhatsAppChannel
+    const mockWhatsAppChannel: NotificationChannel = {
+      supports: jest.fn().mockReturnValue(true),
+      send: jest.fn().mockResolvedValue(ok(undefined))
+    } as any
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -40,6 +48,7 @@ describe('Scenario: Full WhatsApp Reservation Flow', () => {
         { provide: ReservationAPI, useValue: reservationAPI },
         { provide: StayRepository, useValue: stayRepo },
         { provide: CONVERSATION_NOTIFIER, useValue: notifier },
+        { provide: NOTIFICATION_CHANNELS, useValue: [mockWhatsAppChannel] },
       ],
     }).compile()
 
