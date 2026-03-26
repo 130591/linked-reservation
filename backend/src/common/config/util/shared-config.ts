@@ -13,6 +13,13 @@ export const sharedConfigSchema = z.object({
   sesFromEmail: z.string(),
   anthropicApiKey: z.string(),
   frontendUrl: z.string().url(),
+  database: z.object({
+    host: z.string(),
+    port: z.number(),
+    username: z.string(),
+    password: z.string(),
+    database: z.string(),
+  }),
 })
 
 export type Environment = z.infer<typeof environmentSchema>
@@ -30,6 +37,13 @@ export const sharedConfigFactory = (): SharedConfig => {
     sesFromEmail: process.env.SES_FROM_EMAIL,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+    database: {
+      host: process.env.DATABASE_HOST,
+      port: process.env.DATABASE_PORT ? parseInt(process.env.DATABASE_PORT) : 5432,
+      username: process.env.DATABASE_USERNAME,
+      password: process.env.DATABASE_PASSWORD,
+      database: process.env.DATABASE_NAME,
+    },
   })
 
   if (result.success) {

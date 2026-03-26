@@ -1,15 +1,15 @@
-import { ConfigService } from '@nestjs/config'
+import { ConfigService } from '@/common/config/service/config.service'
 import { TypeOrmModuleOptions } from '@nestjs/typeorm'
 
 export const dataSourceOptionsFactory = (
   configService: ConfigService,
 ): TypeOrmModuleOptions => ({
   type: 'postgres',
-  host: configService.get<string>('database.host'),
-  port: configService.get<number>('database.port'),
-  username: configService.get<string>('database.username'),
-  password: configService.get<string>('database.password'),
-  database: configService.get<string>('database.database'),
+  host: configService.get('database.host'),
+  port: configService.get('database.port'),
+  username: configService.get('database.username'),
+  password: configService.get('database.password'),
+  database: configService.get('database.database'),
   synchronize: true, // Set to false in production
   autoLoadEntities: true,
   logging: false,
