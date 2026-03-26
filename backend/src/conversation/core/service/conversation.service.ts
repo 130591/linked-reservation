@@ -130,7 +130,7 @@ export class ConversationService {
     await this.stateRepo.save({ ...state, step: 'LINK_SENT' })
   }
 
-  private async sendWhatsAppResponse(phone: string, message: string): Promise<void> {
+  private async sendWhatsAppResponse(phone: string, message: string, stayId: string): Promise<void> {
     try {
       // Remove 'whatsapp:' prefix se existir
       const cleanPhone = phone.replace('whatsapp:', '')
@@ -145,7 +145,7 @@ export class ConversationService {
         return
       }
       
-      const result = await whatsappChannel.send(cleanPhone, message)
+      const result = await whatsappChannel.send(cleanPhone, message, stayId)
       
       if (result.isErr()) {
         this.logger.error(`Failed to send WhatsApp response to ${phone}:`, result.error)
