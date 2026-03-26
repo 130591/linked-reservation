@@ -1,8 +1,18 @@
 import { DefaultTypeOrmRepository } from '@/common/database'
+import { Injectable } from '@nestjs/common'
+import { InjectDataSource } from '@nestjs/typeorm'
+import { DataSource } from 'typeorm'
 import { NotificationEntity } from '../entities/notification'
 
-
+@Injectable()
 export class NotificationRepository extends DefaultTypeOrmRepository<NotificationEntity> {
+  constructor(
+    @InjectDataSource()
+    dataSource: DataSource
+  ) {
+    super(NotificationEntity, dataSource.manager)
+  }
+
   protected toDomain(row: any): NotificationEntity {
     return new NotificationEntity({
       id: row.id,

@@ -1,9 +1,18 @@
 import { DefaultTypeOrmRepository } from '@/common/database'
 import { Injectable } from '@nestjs/common'
+import { InjectDataSource } from '@nestjs/typeorm'
+import { DataSource } from 'typeorm'
 import { RoutingRuleEntity } from '../entities/routing-rule'
 
 @Injectable()
 export class RoutingRuleRepository extends DefaultTypeOrmRepository<RoutingRuleEntity> {
+  constructor(
+    @InjectDataSource()
+    dataSource: DataSource
+  ) {
+    super(RoutingRuleEntity, dataSource.manager)
+  }
+
   async findActiveRules(
     stayId: string,
     eventType: string,
