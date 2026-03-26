@@ -19,7 +19,7 @@ export class EmailChannel implements NotificationChannel {
     return channel === 'EMAIL'
   }
 
-  async send(email: string, body: string): Promise<Result<void, ChannelSendError>> {
+  async send(email: string, body: string, stayId?: string): Promise<Result<void, ChannelSendError>> {
     try {
       await this.client.send(new SendEmailCommand({
         Source: this.from,
