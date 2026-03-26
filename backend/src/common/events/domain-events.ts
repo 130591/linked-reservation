@@ -1,3 +1,5 @@
+import { EventQueues, mapEventToQueue, getQueueUrl } from './queue-mapper'
+
 export const DomainEvents = {
   RESERVATION_CONFIRMED: 'reservation.confirmed',
   RESERVATION_CANCELLED: 'reservation.cancelled',
@@ -9,12 +11,8 @@ export const DomainEvents = {
 
 export type DomainEventType = typeof DomainEvents[keyof typeof DomainEvents]
 
-export const EventQueues = {
-  SESSION_EXPIRED: 'reservation.session.expired',
-  RESERVATION_CONFIRMED: 'reservation.confirmed',
-  SESSION_LINK_GENERATED: 'session.link_generated',
-  CONVERSATION_REPLY: 'notification.conversation.reply',
-} as const
+// Re-export para manter compatibilidade
+export { EventQueues, mapEventToQueue, getQueueUrl }
 
 export interface SessionExpiredPayload {
   sessionId: string
