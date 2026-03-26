@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, Logger } from '@nestjs/common'
+import { Controller, Post, Body, HttpCode, Logger, Headers } from '@nestjs/common'
 import { ConversationService } from '../../core/service'
 import { InboundMessageDto } from '../dto/inbound-message.dto'
 
@@ -10,16 +10,33 @@ export class ConversationController {
 
   @Post('whatsapp')
   @HttpCode(200)
-  receiveMessage(@Body() dto: InboundMessageDto): void {
-    this.conversationService
-      .handle({
+  async receiveMessage(
+    @Body() dto: InboundMessageDto,
+    @Headers('x-twilio-signature') signature: string
+  ): Promise<string> {
+    try {
+      // Valida assinatura do Twilio (opcional para desenvolvimento)
+      // if (!this.isValidSignature(dto, signature)) {
+      //   return 'Invalid signature'
+      // }
+
+      // Processa a mensagem através do ConversationService
+      await this.conversationService.handle({
         messageId: dto.messageId,
         phone: dto.from,
         stayId: dto.metadata.stayId,
         body: dto.body
       })
-      .catch(err =>
-        this.logger.error('Unhandled error in ConversationService', err)
-      )
+
+      return 'Message processed'
+    } catch (error) {
+      this.logger.error('Error processing WhatsApp webhook:', error)
+      return 'Error processing message'
+    }
+  }
+
+  private isValidSignature(body: any, signature: string): boolean {
+    // Implementar validação de assinatura do Twilio se necessário
+    return true
   }
 }
