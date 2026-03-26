@@ -2,11 +2,13 @@ import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@/common/config'
 import { TypeOrmPersistenceModule } from '@/common/database/persistence/typeorm-persistence.module'
 import { dataSourceOptionsFactory } from '@/common/database/persistence/typeorm-datasource.factory'
+import { SqsClientModule } from '@/common/messaging/sqs.module'
 import { NotificationModule } from './notification/notification.module'
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
+    SqsClientModule,
     ...(process.env.NODE_ENV !== 'test'
       ? [
         TypeOrmPersistenceModule.forRoot({
