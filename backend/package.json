@@ -38,6 +38,7 @@
     "pg": "^8.18.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "twilio": "^5.13.1",
     "typedi": "^0.10.0",
     "typeorm": "^0.3.28",
     "typeorm-transactional": "^0.5.0",
