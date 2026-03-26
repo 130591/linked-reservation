@@ -74,6 +74,6 @@ import { WhatsAppChannel, EmailChannel, NOTIFICATION_CHANNELS } from './core/cha
       inject: [WhatsAppChannel, EmailChannel]
     }
   ],
-  exports: [NotificationService]
+  exports: [NotificationService, WhatsAppChannel, NOTIFICATION_CHANNELS]
 })
 export class NotificationModule { }
