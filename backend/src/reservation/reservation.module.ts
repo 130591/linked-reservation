@@ -12,6 +12,8 @@ import { ReservationController } from './http/controller/reservation'
 import { ReservationTokenGuard } from '@/common/framework/guards/reservation-token.guard'
 import { GetAvailableRooms } from './core/service/get-available-rooms'
 import { ReservationAPI } from './external-api'
+import { SqsEventBus } from '@/common/messaging/sqs-event-bus'
+import { EVENT_BUS } from '@/common/messaging/event-bus.interface'
 
 @Module({
   imports: [ReservationPersistenceModule],
@@ -24,7 +26,12 @@ import { ReservationAPI } from './external-api'
     GetAvailableRooms,
     ReservationTokenService,
     ReservationTokenGuard,
-    ReservationAPI
+    ReservationAPI,
+    SqsEventBus,
+    {
+      provide: EVENT_BUS,
+      useClass: SqsEventBus
+    }
   ],
   exports: [
     ReservationAPI
