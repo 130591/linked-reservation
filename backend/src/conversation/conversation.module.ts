@@ -8,8 +8,11 @@ import { ConversationService } from './core/service'
 import { ConversationFlowService } from './core/service'
 import { IntentExtractorService } from './core/service'
 import { ConversationStateRepository } from './persist'
+import { StayRepository } from '@/reservation/persist/repositories/stay.repository'
 import { CONVERSATION_NOTIFIER } from './core/contract'
 import { ReservationAPI } from '@/reservation/external-api'
+import { SqsEventBus } from '@/common/messaging/sqs-event-bus'
+import { EVENT_BUS } from '@/common/messaging/event-bus.interface'
 
 @Module({
   imports: [
@@ -24,9 +27,15 @@ import { ReservationAPI } from '@/reservation/external-api'
     ConversationFlowService,
     IntentExtractorService,
     ConversationStateRepository,
+    StayRepository,
     SyncConversationNotifier,
     AsyncConversationNotifier,
     ReservationAPI,
+    SqsEventBus,
+    {
+      provide: EVENT_BUS,
+      useClass: SqsEventBus
+    },
     {
       provide: CONVERSATION_NOTIFIER,
       useClass: SyncConversationNotifier
