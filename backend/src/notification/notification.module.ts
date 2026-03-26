@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { ConfigModule } from '@nestjs/config'
 import { NotifyStaffConsumer } from './jobs'
 import { NotificationEventsConsumer } from './jobs/notification-events.consumer'
 import { TemplateRenderer } from './core/domain/template-renderer'
@@ -8,6 +9,7 @@ import { RoutingRuleRepository, NotificationRepository } from './persist'
 import { WhatsAppChannel, EmailChannel, NOTIFICATION_CHANNELS } from './core/channels'
 
 @Module({
+  imports: [ConfigModule],
   providers: [
     TemplateRenderer,
     TemplateValidator,
