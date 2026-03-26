@@ -104,7 +104,7 @@ export class NotificationService {
       return
     }
 
-    const sendResult = await channelImpl.send(destination, body)
+    const sendResult = await channelImpl.send(destination, body, event.payload.stayId as string)
 
     if (sendResult.isOk()) {
       await this.notificationRepo.update(notification.id, {
