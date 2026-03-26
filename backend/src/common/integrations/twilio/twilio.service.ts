@@ -7,6 +7,8 @@ export interface SendWhatsAppOptions {
   body?: string
   contentSid?: string
   contentVariables?: string
+  // Para multitenancy - apenas o número from varia
+  from?: string
 }
 
 export interface TwilioMessage {
@@ -34,12 +36,13 @@ export class TwilioService {
 
   async sendWhatsApp(options: SendWhatsAppOptions): Promise<TwilioMessage> {
     try {
+      const fromNumber = options.from || this.config.get('twilioWhatsAppFrom')
+
       const messageData: any = {
-        from: this.config.get('twilioWhatsAppFrom'),
+        from: fromNumber,
         to: `whatsapp:${options.to}`
       }
 
-      // Usa content template se fornecido
       if (options.contentSid) {
         messageData.contentSid = options.contentSid
         if (options.contentVariables) {
@@ -53,7 +56,7 @@ export class TwilioService {
 
       const message = await this.client.messages.create(messageData)
       
-      this.logger.log(`WhatsApp message sent: ${message.sid} to ${options.to}`)
+      this.logger.log(`WhatsApp message sent from ${fromNumber} to ${options.to}: ${message.sid}`)
       
       return {
         sid: message.sid,
@@ -66,34 +69,8 @@ export class TwilioService {
         dateUpdated: message.dateUpdated
       }
     } catch (error) {
-      this.logger.error(`Failed to send WhatsApp message to ${options.to}:`, error)
+      this.logger.error('Failed to send WhatsApp message:', error)
       throw error
     }
-  }
-
-  async sendWhatsAppTemplate(
-    to: string,
-    contentSid: string,
-    variables: Record<string, string>
-  ): Promise<TwilioMessage> {
-    const contentVariables = JSON.stringify(
-      Object.entries(variables).reduce((acc, [key, value], index) => {
-        acc[(index + 1).toString()] = value
-        return acc
-      }, {} as Record<string, string>)
-    )
-
-    return this.sendWhatsApp({
-      to,
-      contentSid,
-      contentVariables
-    })
-  }
-
-  async sendWhatsAppText(to: string, body: string): Promise<TwilioMessage> {
-    return this.sendWhatsApp({
-      to,
-      body
-    })
   }
 }
