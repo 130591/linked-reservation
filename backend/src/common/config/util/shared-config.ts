@@ -18,6 +18,7 @@ export const sharedConfigSchema = z.object({
   sesFromEmail: z.string(),
   anthropicApiKey: z.string(),
   frontendUrl: z.string().url(),
+  bookingBaseUrl: z.string().url(),
   
   database: z.object({
     host: z.string(),
@@ -48,6 +49,7 @@ export const sharedConfigFactory = (): SharedConfig => {
     sesFromEmail: process.env.SES_FROM_EMAIL,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+    bookingBaseUrl: process.env.BOOKING_BASE_URL || 'http://localhost:3000',
     database: {
       host: process.env.DATABASE_HOST,
       port: process.env.DATABASE_PORT ? parseInt(process.env.DATABASE_PORT) : 5432,

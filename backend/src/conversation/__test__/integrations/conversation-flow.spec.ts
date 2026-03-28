@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing'
+import { ConfigService } from '@/common/config/service/config.service'
 import { ConversationService, InboundMessage } from '../../core/service/conversation.service'
 import { IntentExtractorService } from '../../core/service/intent-extractor.service'
 import { ConversationFlowService } from '../../core/service/conversation-flow.service'
@@ -47,6 +48,7 @@ describe('Scenario: Full WhatsApp Reservation Flow', () => {
         { provide: ConversationStateRepository, useValue: stateRepo },
         { provide: ReservationAPI, useValue: reservationAPI },
         { provide: StayRepository, useValue: stayRepo },
+        { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue('http://localhost:3000/booking') } },
         { provide: CONVERSATION_NOTIFIER, useValue: notifier },
         { provide: NOTIFICATION_CHANNELS, useValue: [mockWhatsAppChannel] },
       ],

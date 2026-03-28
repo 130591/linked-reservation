@@ -7,9 +7,16 @@ import { ReservationRepository } from './repositories/reservation.repository'
 import { ReservationSessionRepository } from './repositories/reservation-session.repository'
 import { RoomRepository } from './repositories/room.repository'
 import { StayRepository } from './repositories/stay.repository'
+import { StaffMemberRepository } from './repositories/staff-member.repository'
 
 
-const repositories = [ReservationRepository, ReservationSessionRepository, RoomRepository, StayRepository]
+const repositories = [
+  ReservationRepository, 
+  ReservationSessionRepository, 
+  RoomRepository, 
+  StayRepository,
+  StaffMemberRepository
+]
 
 @Module({
   imports: [

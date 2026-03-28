@@ -42,7 +42,6 @@ export class NotificationService {
       return
     }
 
-    // Idempotência — se já foi notificado, para aqui
     const existing = await this.notificationRepo.findOne({
       where: {
         eventType: event.type,
@@ -52,7 +51,6 @@ export class NotificationService {
     })
     if (existing) return
 
-    // ── Template Rendering (Result) ──
     const renderResult = this.templateRenderer.render(
       event.type,
       channel,
@@ -73,8 +71,6 @@ export class NotificationService {
     }
 
     const body = renderResult.value
-
-    // ── Persist as PENDING ──
     const notification = await this.notificationRepo.save(
       new NotificationEntity({
         recipientId: recipient.id,
@@ -113,8 +109,6 @@ export class NotificationService {
       })
       return
     }
-
-    // ── Handle channel failure ──
     const sendError = sendResult.error
 
     this.logger.error(
