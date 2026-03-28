@@ -1,4 +1,5 @@
 export * from './reservation'
 export * from './reservation-session'
 export * from './room'
+export * from './staff-member'
 export * from './stay'
