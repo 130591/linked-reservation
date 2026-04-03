@@ -11,10 +11,12 @@ import { TemplateValidator } from './core/domain/template-validator'
 import { NotificationService, NotificationRouter } from './core/service'
 import { RoutingRuleRepository, NotificationRepository } from './persist'
 import { WhatsAppChannel, EmailChannel, NOTIFICATION_CHANNELS } from './core/channels'
+import { ReservationModule } from '@/reservation/reservation.module'
 
 @Module({
   imports: [
     ConfigModule,
+    ReservationModule,
     SqsModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {

@@ -1,9 +1,13 @@
 import { Result } from 'neverthrow'
 import { GenerateLink, GenerateLinkError, GenerateLinkResult } from '../core/service'
 import { GenerateLinkCommand } from '../http/dto/generate-link'
+import { StayRepository } from '../persist/repositories/stay.repository'
 
 export class ReservationAPI {
-  constructor(private readonly generateLink: GenerateLink) { }
+  constructor(
+    private readonly generateLink: GenerateLink,
+    private readonly stayRepo: StayRepository,
+  ) { }
 
   async generate(command: GenerateLinkCommand): Promise<Result<GenerateLinkResult, GenerateLinkError>> {
     return await this.generateLink.handle({
@@ -15,5 +19,10 @@ export class ReservationAPI {
       stayName: command.stayName,
       customerName: command.customerName
     })
+  }
+
+  async findWhatsAppNumber(stayId: string): Promise<string | null> {
+    const stay = await this.stayRepo.findOneById(stayId)
+    return stay?.whatsappNumber ?? null
   }
 }

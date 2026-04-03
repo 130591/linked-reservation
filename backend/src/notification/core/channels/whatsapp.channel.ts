@@ -4,7 +4,7 @@ import { NotificationChannel, ChannelSendError } from './channel.interface'
 import { Result, ok, err } from 'neverthrow'
 import { NotificationError } from '../domain/notification-error'
 import { ConfigService } from '@/common/config'
-import { StayRepository } from '@/reservation/persist/repositories/stay.repository'
+import { ReservationAPI } from '@/reservation/external-api'
 
 @Injectable()
 export class WhatsAppChannel implements NotificationChannel {
@@ -13,7 +13,7 @@ export class WhatsAppChannel implements NotificationChannel {
   constructor(
     private readonly twilioService: TwilioService,
     private readonly config: ConfigService,
-    private readonly stayRepo: StayRepository
+    private readonly reservationApi: ReservationAPI,
   ) {}
 
   supports(channel: string): boolean {
@@ -24,18 +24,16 @@ export class WhatsAppChannel implements NotificationChannel {
     try {
       let fromNumber: string
 
-      // Se tem stayId, usa número específico do hotel
       if (stayId) {
-        const stay = await this.stayRepo.findOneById(stayId)
-        if (stay?.whatsappNumber) {
-          fromNumber = stay.whatsappNumber
-          this.logger.log(`Using WhatsApp number for hotel: ${stay.name} (${fromNumber})`)
+        const whatsappNumber = await this.reservationApi.findWhatsAppNumber(stayId)
+        if (whatsappNumber) {
+          fromNumber = whatsappNumber
+          this.logger.log(`Using hotel-specific WhatsApp number for stay ${stayId}: ${fromNumber}`)
         } else {
-          this.logger.warn(`Hotel ${stayId} has no WhatsApp number, using default`)
+          this.logger.warn(`Stay ${stayId} has no WhatsApp number, using default`)
           fromNumber = this.config.get('twilioWhatsAppFrom')
         }
       } else {
-        // Sem stayId, usa configuração padrão
         fromNumber = this.config.get('twilioWhatsAppFrom')
       }
 
