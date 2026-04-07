@@ -19,7 +19,13 @@ export const sharedConfigSchema = z.object({
   anthropicApiKey: z.string(),
   frontendUrl: z.string().url(),
   bookingBaseUrl: z.string().url(),
-  
+
+  auth0Domain: z.string(),
+  auth0Audience: z.string(),
+  auth0ManagementClientId: z.string(),
+  auth0ManagementClientSecret: z.string(),
+  systemAdminKey: z.string(),
+
   database: z.object({
     host: z.string(),
     port: z.number(),
@@ -50,6 +56,11 @@ export const sharedConfigFactory = (): SharedConfig => {
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
     bookingBaseUrl: process.env.BOOKING_BASE_URL || 'http://localhost:3000',
+    auth0Domain: process.env.AUTH0_DOMAIN,
+    auth0Audience: process.env.AUTH0_AUDIENCE,
+    auth0ManagementClientId: process.env.AUTH0_MANAGEMENT_CLIENT_ID,
+    auth0ManagementClientSecret: process.env.AUTH0_MANAGEMENT_CLIENT_SECRET,
+    systemAdminKey: process.env.SYSTEM_ADMIN_KEY,
     database: {
       host: process.env.DATABASE_HOST,
       port: process.env.DATABASE_PORT ? parseInt(process.env.DATABASE_PORT) : 5432,

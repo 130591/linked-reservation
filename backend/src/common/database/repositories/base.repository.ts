@@ -55,5 +55,5 @@ export abstract class DefaultTypeOrmRepository<T extends DefaultEntity<T>> {
     })
   }
 
-  protected abstract toDomain(row: any): T
+  protected abstract toDomain(row: any): unknown
 }

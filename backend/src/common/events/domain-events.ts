@@ -7,6 +7,8 @@ export const DomainEvents = {
   SESSION_LINK_GENERATED: 'session.link_generated',
   RESERVATION_REMINDER: 'reservation.reminder',
   CONVERSATION_REPLY: 'conversation.reply',
+  PROPERTY_PROVISIONED: 'property.provisioned',
+  PROPERTY_TRIAL_EXPIRING: 'property.trial.expiring',
 } as const
 
 export type DomainEventType = typeof DomainEvents[keyof typeof DomainEvents]
@@ -63,4 +65,15 @@ export interface ConversationReplyPayload {
   phone: string
   stayId: string
   message: string
+}
+
+export interface PropertyProvisionedPayload {
+  propertyId: string
+  adminEmail: string
+}
+
+export interface PropertyTrialExpiringPayload {
+  propertyId: string
+  adminEmail: string
+  trialExpiresAt: string
 }

@@ -7,6 +7,8 @@ export const EventQueues = {
   RESERVATION_CONFIRMED: 'reservation.confirmed',
   SESSION_LINK_GENERATED: 'session.link_generated',
   CONVERSATION_REPLY: 'conversation.reply',
+  PROPERTY_PROVISIONED: 'property.provisioned',
+  PROPERTY_TRIAL_EXPIRING: 'property.trial.expiring',
 } as const
 
 export const QueueNames = {
@@ -14,6 +16,8 @@ export const QueueNames = {
   RESERVATION_CONFIRMED: 'reservation_confirmed',
   SESSION_LINK_GENERATED: 'session_link_generated',
   CONVERSATION_REPLY: 'conversation_reply',
+  PROPERTY_PROVISIONED: 'property_provisioned',
+  PROPERTY_TRIAL_EXPIRING: 'property_trial_expiring',
 } as const
 
 export type EventQueueType = typeof EventQueues[keyof typeof EventQueues]
@@ -28,6 +32,8 @@ export function mapEventToQueue(eventQueue: EventQueueType): QueueNameType {
     [EventQueues.RESERVATION_CONFIRMED]: QueueNames.RESERVATION_CONFIRMED,
     [EventQueues.SESSION_LINK_GENERATED]: QueueNames.SESSION_LINK_GENERATED,
     [EventQueues.CONVERSATION_REPLY]: QueueNames.CONVERSATION_REPLY,
+    [EventQueues.PROPERTY_PROVISIONED]: QueueNames.PROPERTY_PROVISIONED,
+    [EventQueues.PROPERTY_TRIAL_EXPIRING]: QueueNames.PROPERTY_TRIAL_EXPIRING,
   } as const
 
   return mapping[eventQueue]

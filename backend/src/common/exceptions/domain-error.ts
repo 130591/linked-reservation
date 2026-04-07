@@ -8,7 +8,15 @@ export type DomainErrorCode =
   | 'INVALID_PHONE'
   | 'INVALID_CPF'
   | 'NO_ROOMS_FOR_CAPACITY'
-  | 'HOTEL_NOT_FOUND'
+  | 'PROPERTY_NOT_FOUND'
+  | 'PROPERTY_SUSPENDED'
+  | 'PROPERTY_TRIAL_EXPIRED'
+  | 'INVALID_PROPERTY_TYPE'
+  | 'INVALID_PROPERTY_STATUS'
+  | 'STAFF_NOT_AUTHORIZED'
+  | 'STAFF_INVITATION_FAILED'
+  | 'AUTH0_USER_CREATION_FAILED'
+  | 'EVENT_PUBLISH_FAILED'
   | 'ROOM_NOT_AVAILABLE'
   | 'SESSION_EXPIRED'
   | 'ROOM_NOT_FOUND'
@@ -88,9 +96,49 @@ export const DomainError = {
     message: `No rooms available for ${guests} guests`,
   }),
 
-  HOTEL_NOT_FOUND: (): DomainError => ({
-    code: 'HOTEL_NOT_FOUND',
-    message: 'Hotel not found',
+  PROPERTY_NOT_FOUND: (): DomainError => ({
+    code: 'PROPERTY_NOT_FOUND',
+    message: 'Property not found',
+  }),
+
+  PROPERTY_SUSPENDED: (): DomainError => ({
+    code: 'PROPERTY_SUSPENDED',
+    message: 'Property account is suspended',
+  }),
+
+  PROPERTY_TRIAL_EXPIRED: (): DomainError => ({
+    code: 'PROPERTY_TRIAL_EXPIRED',
+    message: 'Property trial period has expired',
+  }),
+
+  INVALID_PROPERTY_TYPE: (value: string): DomainError => ({
+    code: 'INVALID_PROPERTY_TYPE',
+    message: `Invalid property type: '${value}'. Must be one of: hotel, pousada, hostel, other`,
+  }),
+
+  INVALID_PROPERTY_STATUS: (value: string): DomainError => ({
+    code: 'INVALID_PROPERTY_STATUS',
+    message: `Invalid property status: '${value}'. Must be one of: trial, active, suspended`,
+  }),
+
+  STAFF_NOT_AUTHORIZED: (): DomainError => ({
+    code: 'STAFF_NOT_AUTHORIZED',
+    message: 'Staff member is not authorized to perform this action',
+  }),
+
+  STAFF_INVITATION_FAILED: (): DomainError => ({
+    code: 'STAFF_INVITATION_FAILED',
+    message: 'Failed to invite staff member. The email may already be in use.',
+  }),
+
+  AUTH0_USER_CREATION_FAILED: (): DomainError => ({
+    code: 'AUTH0_USER_CREATION_FAILED',
+    message: 'Failed to create user in Auth0',
+  }),
+
+  EVENT_PUBLISH_FAILED: (): DomainError => ({
+    code: 'EVENT_PUBLISH_FAILED',
+    message: 'Failed to publish domain event',
   }),
 
   ROOM_NOT_AVAILABLE: (): DomainError => ({
