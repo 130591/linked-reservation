@@ -46,6 +46,14 @@ import { ReservationModule } from '@/reservation/reservation.module'
               waitTimeSeconds: 20,
               authenticationErrorTimeout: 0,
               sqs: sqsClient
+            },
+            {
+              name: mapEventToQueue(EventQueues.PROPERTY_TRIAL_EXPIRING),
+              queueUrl: getQueueUrl(mapEventToQueue(EventQueues.PROPERTY_TRIAL_EXPIRING), config.get('sqsBaseUrl')),
+              batchSize: 10,
+              waitTimeSeconds: 20,
+              authenticationErrorTimeout: 0,
+              sqs: sqsClient
             }
           ],
           producers: [

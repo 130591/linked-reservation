@@ -8,7 +8,8 @@ import {
   DomainEvents,
   ReservationConfirmedPayload,
   SessionLinkGeneratedPayload,
-  ConversationReplyPayload
+  ConversationReplyPayload,
+  PropertyTrialExpiringPayload,
 } from '@/common/events'
 import { NotificationRecipient, RecipientType } from '../event'
 
@@ -88,6 +89,24 @@ export class NotificationEventsConsumer {
       type: DomainEvents.CONVERSATION_REPLY,
       recipients: [customerRecipient],
       payload: { ...payload }
+    })
+  }
+
+  @SqsMessageHandler(EventQueues.PROPERTY_TRIAL_EXPIRING)
+  async handlePropertyTrialExpiring(message: Message): Promise<void> {
+    const payload = JSON.parse(message.Body!) as PropertyTrialExpiringPayload
+
+    const adminRecipient: NotificationRecipient = {
+      id: payload.propertyId,
+      type: RecipientType.STAFF,
+      name: 'Administrador',
+      email: payload.adminEmail,
+    }
+
+    await this.notificationService.dispatch({
+      type: DomainEvents.PROPERTY_TRIAL_EXPIRING,
+      recipients: [adminRecipient],
+      payload: { ...payload },
     })
   }
 }
