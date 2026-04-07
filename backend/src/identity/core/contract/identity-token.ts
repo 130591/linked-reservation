@@ -1,0 +1,1 @@
+export const AUTH0_MANAGEMENT = Symbol('AUTH0_MANAGEMENT')
