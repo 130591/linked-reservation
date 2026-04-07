@@ -95,7 +95,7 @@ export class Auth0JwtGuard implements CanActivate {
       throw new ForbiddenException(accessResult.error.message)
     }
 
-    ;(request as any)['staff'] = staffMember
+    ;(request as any)['staff'] = { id: staffMember.id, role: staffMember.role, propertyId: staffMember.propertyId }
     return true
   }
 

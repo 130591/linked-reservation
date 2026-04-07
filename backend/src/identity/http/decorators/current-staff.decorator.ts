@@ -1,8 +1,14 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common'
-import { IdentityStaffMemberEntity } from '@/identity/persist/entities/identity-staff-member'
+import { IdentityRole } from '@/identity/persist/entities/identity-staff-member'
+
+export interface StaffContext {
+  id:         string
+  role:       IdentityRole
+  propertyId: string
+}
 
 export const CurrentStaff = createParamDecorator(
-  (_: unknown, ctx: ExecutionContext): IdentityStaffMemberEntity => {
+  (_: unknown, ctx: ExecutionContext): StaffContext => {
     return ctx.switchToHttp().getRequest()['staff']
   },
 )

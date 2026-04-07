@@ -3,7 +3,7 @@ import { Auth0JwtGuard } from '@/identity/http/guards/auth0-jwt.guard'
 import { CurrentStaff } from '@/identity/http/decorators/current-staff.decorator'
 import { InviteStaffService } from '@/identity/core/service/invite-staff'
 import { InviteStaffDto } from '@/identity/http/dto/invite-staff'
-import { IdentityStaffMemberEntity } from '@/identity/persist/entities/identity-staff-member'
+import { StaffContext } from '@/identity/http/decorators/current-staff.decorator'
 
 @Controller('staff')
 export class StaffController {
@@ -13,7 +13,7 @@ export class StaffController {
   @Post('invitations')
   @HttpCode(HttpStatus.CREATED)
   async invite(
-    @CurrentStaff() staff: IdentityStaffMemberEntity,
+    @CurrentStaff() staff: StaffContext,
     @Body() dto: InviteStaffDto,
   ) {
     const result = await this.inviteStaff.handle({
