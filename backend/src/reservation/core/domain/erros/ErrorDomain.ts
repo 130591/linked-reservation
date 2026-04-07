@@ -8,7 +8,7 @@ export type DomainErrorCode =
   | 'INVALID_PHONE'
   | 'INVALID_CPF'
   | 'NO_ROOMS_FOR_CAPACITY'
-  | 'HOTEL_NOT_FOUND'
+  | 'PROPERTY_NOT_FOUND'
   | 'ROOM_NOT_AVAILABLE'
   | 'SESSION_EXPIRED';
 

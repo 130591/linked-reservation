@@ -9,7 +9,7 @@ export type GetAvailableRoomsError = {
   type: 'NO_ROOMS_FOR_CAPACITY'
   guests: number
 } | {
-  type: 'HOTEL_NOT_FOUND'
+  type: 'PROPERTY_NOT_FOUND'
 }
 
 @Injectable()
