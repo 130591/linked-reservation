@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common'
 import { ScheduleModule } from '@nestjs/schedule'
-import { ConfigModule, ConfigService } from '@/common/config'
-import { TypeOrmPersistenceModule } from '@/common/database/persistence/typeorm-persistence.module'
-import { dataSourceOptionsFactory } from '@/common/database/persistence/typeorm-datasource.factory'
+import { ConfigModule } from '@/common/config'
 import { SqsClientModule } from '@/common/messaging/sqs.module'
 import { TwilioModule } from '@/common/integrations/twilio/twilio.module'
 import { RedisCacheModule } from '@/common/redis/redis.module'
@@ -19,10 +17,6 @@ import { IdentityModule } from './identity/identity.module'
     RedisCacheModule,
     ...(process.env.NODE_ENV !== 'test'
       ? [
-        TypeOrmPersistenceModule.forRoot({
-          inject: [ConfigService],
-          useFactory: dataSourceOptionsFactory,
-        }),
         NotificationModule,
         ConversationModule,
         IdentityModule,

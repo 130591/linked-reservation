@@ -5,7 +5,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common'
-import { createRemoteJWKSet, jwtVerify, JWTPayload } from 'jose'
+import type { JWTPayload, createRemoteJWKSet } from 'jose'
 import { Request } from 'express'
 import { ConfigService } from '@/common/config'
 import { PropertyRepository } from '@/identity/persist/repositories/property.repository'
@@ -20,7 +20,7 @@ interface Auth0AppMetadata {
 
 @Injectable()
 export class Auth0JwtGuard implements CanActivate {
-  private readonly JWKS: ReturnType<typeof createRemoteJWKSet>
+  private JWKS: Awaited<ReturnType<typeof createRemoteJWKSet>> | undefined
   private readonly audience: string
 
   constructor(
@@ -28,9 +28,16 @@ export class Auth0JwtGuard implements CanActivate {
     private readonly staffRepo: IdentityStaffMemberRepository,
     private readonly propertyRepo: PropertyRepository,
   ) {
-    const jwksUrl = new URL(`https://${config.get('auth0Domain')}/.well-known/jwks.json`)
-    this.JWKS = createRemoteJWKSet(jwksUrl)
     this.audience = config.get('auth0Audience')
+  }
+
+  private async resolveJose() {
+    const jose = await import('jose')
+    if (!this.JWKS) {
+      const jwksUrl = new URL(`https://${this.config.get('auth0Domain')}/.well-known/jwks.json`)
+      this.JWKS = jose.createRemoteJWKSet(jwksUrl)
+    }
+    return jose
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -41,9 +48,11 @@ export class Auth0JwtGuard implements CanActivate {
       throw new UnauthorizedException('Missing Bearer token')
     }
 
+    const { jwtVerify } = await this.resolveJose()
+
     let payload: JWTPayload
     try {
-      const result = await jwtVerify(token, this.JWKS, {
+      const result = await jwtVerify(token, this.JWKS!, {
         audience: this.audience,
         algorithms: ['RS256'],
       })
@@ -80,7 +89,7 @@ export class Auth0JwtGuard implements CanActivate {
     }
 
     const propertyResult = Property.create(
-      propertyEntity.id,
+      propertyEntity.externalId,
       propertyEntity.name,
       propertyEntity.type,
       propertyEntity.status,
@@ -95,7 +104,7 @@ export class Auth0JwtGuard implements CanActivate {
       throw new ForbiddenException(accessResult.error.message)
     }
 
-    ;(request as any)['staff'] = { id: staffMember.id, role: staffMember.role, propertyId: staffMember.propertyId }
+    (request as any)['staff'] = { id: staffMember.externalId, role: staffMember.role, propertyId: staffMember.propertyId }
     return true
   }
 
