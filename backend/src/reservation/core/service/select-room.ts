@@ -40,7 +40,7 @@ export class SelectRoom {
   ): ReservationEntity {
     return new ReservationEntity({
       roomId,
-      sessionId: session.id,
+      sessionId: session.externalId,
       checkIn: session.checkIn,
       checkOut: session.checkOut,
       status: 'HOLD',
@@ -67,7 +67,7 @@ export class SelectRoom {
 
     const existingHold = await this.reservationRepo.findOne({
       where: {
-        sessionId: session.id,
+        sessionId: session.externalId,
         status: 'HOLD',
         deletedAt: IsNull()
       }
@@ -76,9 +76,9 @@ export class SelectRoom {
     if (existingHold) {
       if (existingHold.roomId === command.roomId) {
         return ok({
-          reservationId: existingHold.id,
+          reservationId: existingHold.externalId,
           roomId: existingHold.roomId,
-          sessionId: session.id,
+          sessionId: session.externalId,
           expiresAt: existingHold.expiresAt
         })
       }
@@ -94,9 +94,9 @@ export class SelectRoom {
       )
 
       return ok({
-        reservationId: hold.id,
+        reservationId: hold.externalId,
         roomId: hold.roomId,
-        sessionId: session.id,
+        sessionId: session.externalId,
         expiresAt: hold.expiresAt
       })
     } catch (error) {

@@ -83,17 +83,17 @@ export class GenerateLink {
 
     await this.eventBus.publish<SessionCreatedEvent>(
       ReservationInternalQueues.SESSION_EXPIRE,
-      { sessionId: session.id, staffId: command.staffId, expiresAt: session.expiresAt },
+      { sessionId: session.externalId, staffId: command.staffId, expiresAt: session.expiresAt },
       { delaySeconds: this.calculateDelay(session.expiresAt) }
     )
 
-    const token = this.tokenService.generate(session.id)
+    const token = this.tokenService.generate(session.externalId)
     const frontendUrl = this.configService.get('frontendUrl')
 
     await this.eventBus.publish<SessionLinkGeneratedPayload>(
       EventQueues.SESSION_LINK_GENERATED,
       {
-        sessionId: session.id,
+        sessionId: session.externalId,
         staffId: command.staffId,
         token,
         stayId: session.stayId,
@@ -107,7 +107,7 @@ export class GenerateLink {
 
     return ok({
       token,
-      sessionId: session.id,
+      sessionId: session.externalId,
       expiresAt: session.expiresAt
     })
   }

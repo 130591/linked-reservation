@@ -48,7 +48,7 @@ describe('Scenario: Admin provisions a new accommodation property', () => {
 
   describe('Given valid property data', () => {
     const savedProperty = new PropertyEntity({
-      id: 'property-uuid',
+      externalId: 'property-uuid',
       name: command.name,
       type: command.type,
       status: 'trial',
@@ -125,7 +125,7 @@ describe('Scenario: Admin provisions a new accommodation property', () => {
   describe('Given the Auth0 client throws an error', () => {
     it('When provisioning is attempted, then the result is err() and no event is published', async () => {
       propertyRepo.save.mockResolvedValue(
-        new PropertyEntity({ id: 'property-uuid', name: command.name, type: command.type, status: 'trial', trialExpiresAt: null }),
+        new PropertyEntity({ externalId: 'property-uuid', name: command.name, type: command.type, status: 'trial', trialExpiresAt: null }),
       )
       fakeAuth0.users.create.mockRejectedValueOnce(new Error('Auth0 unavailable'))
 

@@ -47,7 +47,7 @@ describe('Scenario: Room Selection in a Reservation Session', () => {
     const stayId = 'hotel-456'
 
     const session = {
-      id: sessionId,
+      externalId: sessionId,
       stayId,
       checkIn: new Date('2030-10-01'),
       checkOut: new Date('2030-10-05'),
@@ -59,7 +59,7 @@ describe('Scenario: Room Selection in a Reservation Session', () => {
       sessionRepo.findOneById.mockResolvedValue(session)
       roomRepo.findOneBy.mockResolvedValue({ id: roomId, stayId } as any)
       reservationRepo.findOne.mockResolvedValue(null)
-      reservationRepo.save.mockResolvedValue({ id: 'res-789', roomId, expiresAt: session.expiresAt } as any)
+      reservationRepo.save.mockResolvedValue({ externalId: 'res-789', roomId, expiresAt: session.expiresAt } as any)
 
       const result = await service.handle({ sessionId, roomId })
 
@@ -77,7 +77,7 @@ describe('Scenario: Room Selection in a Reservation Session', () => {
       sessionRepo.findOneById.mockResolvedValue(session)
       roomRepo.findOneBy.mockResolvedValue({ id: roomId, stayId } as any)
       reservationRepo.findOne.mockResolvedValue(existingHold)
-      reservationRepo.save.mockResolvedValue({ id: 'res-new', roomId, expiresAt: session.expiresAt } as any)
+      reservationRepo.save.mockResolvedValue({ externalId: 'res-new', roomId, expiresAt: session.expiresAt } as any)
 
       const result = await service.handle({ sessionId, roomId })
 

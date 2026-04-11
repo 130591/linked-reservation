@@ -41,14 +41,14 @@ export class ProvisionPropertyService {
     )
 
     return ResultAsync
-      .fromPromise(this.createAuth0User(command, property.id), () => DomainError.AUTH0_USER_CREATION_FAILED())
+      .fromPromise(this.createAuth0User(command, property.externalId), () => DomainError.AUTH0_USER_CREATION_FAILED())
       .andThen(auth0UserId => ResultAsync.fromPromise(
         this.eventBus.publish<PropertyProvisionedPayload>(
           DomainEvents.PROPERTY_PROVISIONED,
-          { propertyId: property.id, adminEmail: command.adminEmail },
+          { propertyId: property.externalId, adminEmail: command.adminEmail },
         ),
         () => DomainError.EVENT_PUBLISH_FAILED(),
-      ).map(() => ({ propertyId: property.id, auth0UserId })))
+      ).map(() => ({ propertyId: property.externalId, auth0UserId })))
   }
 
   private trialExpiresAt(): Date {

@@ -54,7 +54,7 @@ export class OutboxPublisherJob {
     await this.client.send(new SendMessageCommand({
       QueueUrl: `${this.baseUrl}/${event.queue}`,
       MessageBody: JSON.stringify(event.payload),
-      MessageDeduplicationId: event.id, // idempotency on the SQS FIFO
+      MessageDeduplicationId: event.externalId, // idempotency on the SQS FIFO
       MessageGroupId: event.queue,
       DelaySeconds: event.delaySeconds
     }))

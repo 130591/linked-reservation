@@ -55,7 +55,7 @@ export class ConfirmPayment {
     await this.eventBus.publish<ReservationConfirmedPayload>(
       EventQueues.RESERVATION_CONFIRMED,
       {
-        reservationId: reservation.id,
+        reservationId: reservation.externalId,
         stayId: session.stayId,
         roomId: reservation.roomId,
         checkIn: reservation.checkIn.toISOString(),
@@ -64,12 +64,12 @@ export class ConfirmPayment {
         guestPhone: session.customer?.phone ?? '',
         guestsCount: session.guests,
         stayName: session.stayName,
-        bookingLink: `${frontendUrl}/reservation/${reservation.id}`
+        bookingLink: `${frontendUrl}/reservation/${reservation.externalId}`
       }
     )
 
     return {
-      reservationId: reservation.id,
+      reservationId: reservation.externalId,
       status: reservation.status
     }
   }

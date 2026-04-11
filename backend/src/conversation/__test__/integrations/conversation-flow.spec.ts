@@ -147,7 +147,7 @@ describe('Scenario: Full WhatsApp Reservation Flow', () => {
 
       // Mock Stay
       stayRepo.findOneById.mockResolvedValue(new StayEntity({
-        id: STAY_ID,
+        externalId: STAY_ID,
         name: 'Pousada do Sol',
         phone: '123'
       }))

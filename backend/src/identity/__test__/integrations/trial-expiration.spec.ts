@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { TrialExpirationJob } from '@/identity/jobs/trial-expiration.job'
 import { PropertyRepository } from '@/identity/persist/repositories/property.repository'
 import { IdentityStaffMemberRepository } from '@/identity/persist/repositories/identity-staff-member.repository'
-import { Property } from '@/identity/core/domain/property'
+import { PropertyEntity } from '@/identity/persist/entities/property'
 import { IdentityStaffMemberEntity } from '@/identity/persist/entities/identity-staff-member'
 import { EVENT_BUS } from '@/common/messaging'
 import { DomainEvents } from '@/common/events'
@@ -20,7 +20,7 @@ describe('Scenario: Trial expiration job runs at midnight', () => {
   let eventBus: FakeEventBus
 
   const adminStaff = new IdentityStaffMemberEntity({
-    id: 'staff-uuid',
+    externalId: 'staff-uuid',
     auth0Sub: 'auth0|admin',
     email: 'admin@pousada.com',
     name: 'João Admin',
@@ -55,22 +55,26 @@ describe('Scenario: Trial expiration job runs at midnight', () => {
   })
 
   describe('Given properties with trialExpiresAt in the past', () => {
-    const expiredProperty = Property.create(
-      'property-uuid', 'Pousada Expirada', 'pousada', 'trial',
-      new Date(Date.now() - 24 * 60 * 60 * 1000),
-    )._unsafeUnwrap()
+    const expiredEntity = new PropertyEntity({
+      externalId: 'property-uuid',
+      name: 'Pousada Expirada',
+      type: 'pousada',
+      status: 'trial',
+      trialExpiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    })
 
     beforeEach(() => {
+      propertyRepo.save.mockResolvedValue(expiredEntity)
       propertyRepo.findTrialPropertiesExpiring
-        .mockResolvedValueOnce([expiredProperty])  // expired now
-        .mockResolvedValueOnce([expiredProperty])  // expiring in 2 days (includes expired)
+        .mockResolvedValueOnce([expiredEntity])  // expired now
+        .mockResolvedValueOnce([expiredEntity])  // expiring in 2 days (includes expired)
     })
 
     it('When the job runs, then the property status is updated to suspended', async () => {
       await job.run()
 
       expect(propertyRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 'property-uuid', status: 'suspended' }),
+        expect.objectContaining({ externalId: 'property-uuid', status: 'suspended' }),
       )
     })
 
@@ -83,15 +87,18 @@ describe('Scenario: Trial expiration job runs at midnight', () => {
   })
 
   describe('Given properties expiring within 2 days (but not yet expired)', () => {
-    const soonProperty = Property.create(
-      'property-soon-uuid', 'Pousada Quase Expirando', 'hostel', 'trial',
-      new Date(Date.now() + 24 * 60 * 60 * 1000),
-    )._unsafeUnwrap()
+    const soonEntity = new PropertyEntity({
+      externalId: 'property-soon-uuid',
+      name: 'Pousada Quase Expirando',
+      type: 'hostel',
+      status: 'trial',
+      trialExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    })
 
     beforeEach(() => {
       staffRepo.findAdminByPropertyId.mockResolvedValue(
         new IdentityStaffMemberEntity({
-          id: 'staff-soon-uuid',
+          externalId: 'staff-soon-uuid',
           auth0Sub: 'auth0|admin-soon',
           email: 'admin@hostel.com',
           name: 'Ana Admin',
@@ -102,8 +109,8 @@ describe('Scenario: Trial expiration job runs at midnight', () => {
       )
 
       propertyRepo.findTrialPropertiesExpiring
-        .mockResolvedValueOnce([])              // none expired yet
-        .mockResolvedValueOnce([soonProperty])  // expiring within 2 days
+        .mockResolvedValueOnce([])            // none expired yet
+        .mockResolvedValueOnce([soonEntity])  // expiring within 2 days
     })
 
     it('When the job runs, then the property.trial.expiring event is published with propertyId and adminEmail', async () => {

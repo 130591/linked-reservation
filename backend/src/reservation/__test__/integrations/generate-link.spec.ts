@@ -60,7 +60,7 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
 
     it('When they request the link generation, then the system must create a new active session in the database', async () => {
       sessionRepo.save.mockResolvedValue({
-        id: 'session-uuid',
+        externalId: 'session-uuid',
         stayId: command.stayId,
         stayName: command.stayName,
         checkIn: command.checkIn,
@@ -82,9 +82,9 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
     })
 
     it('And the system must return a signed token (HMAC) containing the session ID to ensure integrity', async () => {
-      const sessionId = 'session-uuid'
+      const sessionExternalId = 'session-uuid'
       sessionRepo.save.mockResolvedValue({
-        id: sessionId,
+        externalId: sessionExternalId,
         stayId: command.stayId,
         stayName: command.stayName,
         checkIn: command.checkIn,
@@ -108,7 +108,7 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
         .digest('base64url')
 
       expect(sig).toBe(expectedSig)
-      expect(Buffer.from(payload, 'base64url').toString()).toBe(sessionId)
+      expect(Buffer.from(payload, 'base64url').toString()).toBe(sessionExternalId)
     })
 
     it('And the generated session must have an expiration of exactly 15 minutes from creation', async () => {
@@ -134,7 +134,7 @@ describe('Scenario: Generate Reservation Link by a Staff Member', () => {
     it('And it must publish a SESSION_LINK_GENERATED event with the enriched payload', async () => {
       const eventBus = (service as any).eventBus as FakeEventBus
       sessionRepo.save.mockResolvedValue({
-        id: 'session-uuid',
+        externalId: 'session-uuid',
         stayId: command.stayId,
         stayName: command.stayName,
         checkIn: command.checkIn,

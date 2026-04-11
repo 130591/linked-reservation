@@ -14,26 +14,25 @@ export class PropertyRepository extends DefaultTypeOrmRepository<PropertyEntity>
     super(PropertyEntity, dataSource.manager)
   }
 
-  async findTrialPropertiesExpiring(before: Date): Promise<Property[]> {
-    const entities = await this.find({
+  async findTrialPropertiesExpiring(before: Date): Promise<PropertyEntity[]> {
+    return this.find({
       where: {
         status: 'trial',
         trialExpiresAt: LessThan(before),
       },
     })
-    return entities.map(e => this.toDomain(e))
   }
 
   protected toDomain(entity: PropertyEntity): Property {
     return Property.create(
-      entity.id,
+      entity.externalId,
       entity.name,
       entity.type,
       entity.status,
       entity.trialExpiresAt,
     ).match(
       property => property,
-      _err => { throw new Error(`Data corruption in database: property ${entity.id} and ${entity.name}`) }
+      _err => { throw new Error(`Data corruption: property ${entity.externalId} (${entity.name}) has invalid type/status`) }
     )
   }
 }

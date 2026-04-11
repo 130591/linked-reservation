@@ -7,7 +7,7 @@ import { RoutingRuleEntity } from '../entities/routing-rule'
 @Injectable()
 export class RoutingRuleRepository extends DefaultTypeOrmRepository<RoutingRuleEntity> {
   constructor(
-    @InjectDataSource()
+    @InjectDataSource('reservation')
     dataSource: DataSource
   ) {
     super(RoutingRuleEntity, dataSource.manager)

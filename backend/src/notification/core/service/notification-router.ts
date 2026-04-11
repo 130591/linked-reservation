@@ -28,7 +28,7 @@ export class NotificationRouter {
     }
 
     return decisions.map(decision => ({
-      id: decision.ruleId,
+      id: decision.ruleId.toString(),
       type: event.recipient.type,
       phone: event.recipient.phone,
       email: event.recipient.email,

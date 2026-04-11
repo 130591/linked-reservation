@@ -5,7 +5,7 @@ export function buildMessage(body: object) {
   return { Body: JSON.stringify(body) } as any
 }
 
-export function buildSession(overrides: Partial<ReservationSessionEntity> & { id: string }): ReservationSessionEntity {
+export function buildSession(overrides: Partial<ReservationSessionEntity> & { externalId: string }): ReservationSessionEntity {
   return new ReservationSessionEntity({
     stayId: 'hotel-1',
     stayName: 'Grand Hotel',
@@ -21,7 +21,7 @@ export function buildSession(overrides: Partial<ReservationSessionEntity> & { id
   })
 }
 
-export function buildReservation(overrides: Partial<ReservationEntity> & { id: string; sessionId: string }): ReservationEntity {
+export function buildReservation(overrides: Partial<ReservationEntity> & { externalId: string; sessionId: string }): ReservationEntity {
   return new ReservationEntity({
     roomId: 'room-1',
     checkIn: new Date('2030-06-01'),

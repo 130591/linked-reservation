@@ -28,7 +28,7 @@ export class OutboxRepository extends DefaultTypeOrmRepository<OutboxEventEntity
     `, [limit])
   }
 
-  async markPublished(ids: string[]): Promise<void> {
+  async markPublished(ids: number[]): Promise<void> {
     await this.manager.query(`
       UPDATE outbox_events
       SET published_at = NOW()

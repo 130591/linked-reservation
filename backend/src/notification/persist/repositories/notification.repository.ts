@@ -7,7 +7,7 @@ import { NotificationEntity } from '../entities/notification'
 @Injectable()
 export class NotificationRepository extends DefaultTypeOrmRepository<NotificationEntity> {
   constructor(
-    @InjectDataSource()
+    @InjectDataSource('reservation')
     dataSource: DataSource
   ) {
     super(NotificationEntity, dataSource.manager)

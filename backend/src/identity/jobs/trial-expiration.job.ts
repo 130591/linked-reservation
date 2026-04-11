@@ -3,9 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule'
 import { EventBus, EVENT_BUS } from '@/common/messaging'
 import { DomainEvents, PropertyTrialExpiringPayload } from '@/common/events'
 import { PropertyRepository, IdentityStaffMemberRepository } from '@/identity/persist'
-import { Property } from '../core/domain/property'
-import { PropertyEntity } from '@/identity/persist'
-
+import { PropertyEntity } from '@/identity/persist/entities/property'
 
 const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000
 
@@ -37,31 +35,25 @@ export class TrialExpirationJob {
     await Promise.all(toWarn.map(p => this.warnProperty(p)))
   }
 
-  private async suspendProperty(property: Property): Promise<void> {
-    const suspended = property.suspend()
-    await this.propertyRepo.save(new PropertyEntity({
-      id:             suspended.id,
-      name:           suspended.name,
-      type:           suspended.type,
-      status:         suspended.status,
-      trialExpiresAt: suspended.trialExpiresAt,
-    }))
-    this.logger.log(`Property ${property.id} suspended: trial expired`)
+  private async suspendProperty(entity: PropertyEntity): Promise<void> {
+    entity.status = 'suspended'
+    await this.propertyRepo.save(entity)
+    this.logger.log(`Property ${entity.externalId} suspended: trial expired`)
   }
 
-  private async warnProperty(property: Property): Promise<void> {
-    const admin = await this.staffRepo.findAdminByPropertyId(property.id)
+  private async warnProperty(entity: PropertyEntity): Promise<void> {
+    const admin = await this.staffRepo.findAdminByPropertyId(entity.externalId)
     if (!admin) return
 
     await this.eventBus.publish<PropertyTrialExpiringPayload>(
       DomainEvents.PROPERTY_TRIAL_EXPIRING,
       {
-        propertyId:     property.id,
+        propertyId:     entity.externalId,
         adminEmail:     admin.email,
-        trialExpiresAt: property.trialExpiresAtOrThrow().toISOString(),
+        trialExpiresAt: entity.trialExpiresAt!.toISOString(),
       },
     )
 
-    this.logger.log(`Property ${property.id} trial warning sent to ${admin.email}`)
+    this.logger.log(`Property ${entity.externalId} trial warning sent to ${admin.email}`)
   }
 }

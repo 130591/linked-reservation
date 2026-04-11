@@ -4,7 +4,7 @@ export class FakeSessionRepository {
   private store = new Map<string, ReservationSessionEntity>()
 
   seed(entity: ReservationSessionEntity) {
-    this.store.set(entity.id, entity)
+    this.store.set(entity.externalId, entity)
   }
 
   async findOneById(id: string) {
@@ -34,7 +34,7 @@ export class FakeReservationRepository {
   private store = new Map<string, ReservationEntity>()
 
   seed(entity: ReservationEntity) {
-    this.store.set(entity.id, entity)
+    this.store.set(entity.externalId, entity)
   }
 
   async update(criteria: any, data: any) {

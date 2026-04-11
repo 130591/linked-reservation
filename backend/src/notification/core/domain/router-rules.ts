@@ -3,7 +3,7 @@ import { NotificationError, RoutingRuleInvalidError } from './notification-error
 import { err, ok, Result } from 'neverthrow'
 
 export interface RoutingRule {
-  id: string
+  id: number
   stayId: string
   eventType: string
   channel: string
@@ -21,7 +21,7 @@ export interface RoutingContext {
 }
 
 export interface RoutingDecision {
-  ruleId: string
+  ruleId: number
   channel: string
   destination: string
 }
@@ -101,7 +101,7 @@ const decision = (rule: RoutingRule, destination: string): EvalResult => ({
   type: 'decision',
   value: { ruleId: rule.id, channel: rule.channel, destination },
 })
-const mkError  = (ruleId: string, message: string):    EvalResult => ({
+const mkError  = (ruleId: number, message: string):    EvalResult => ({
   type: 'error',
   error: NotificationError.ROUTING_RULE_INVALID(ruleId, message),
 })

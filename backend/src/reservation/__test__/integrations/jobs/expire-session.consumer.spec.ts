@@ -34,8 +34,8 @@ describe('Scenario: Expire a Reservation Session after timeout', () => {
     const staffId = 'staff-1'
 
     beforeEach(() => {
-      sessionRepo.seed(buildSession({ id: sessionId }))
-      reservationRepo.seed(buildReservation({ id: 'res-001', sessionId }))
+      sessionRepo.seed(buildSession({ externalId: sessionId }))
+      reservationRepo.seed(buildReservation({ externalId: 'res-001', sessionId }))
     })
 
     it('When the expiration message arrives, then the session status must change to EXPIRED', async () => {
@@ -77,8 +77,8 @@ describe('Scenario: Expire a Reservation Session after timeout', () => {
     const staffId = 'staff-1'
 
     beforeEach(() => {
-      sessionRepo.seed(buildSession({ id: sessionId, status: 'COMPLETED' }))
-      reservationRepo.seed(buildReservation({ id: 'res-002', sessionId, status: 'CONFIRMED' }))
+      sessionRepo.seed(buildSession({ externalId: sessionId, status: 'COMPLETED' }))
+      reservationRepo.seed(buildReservation({ externalId: 'res-002', sessionId, status: 'CONFIRMED' }))
     })
 
     it('When the expiration message arrives, then the session must remain COMPLETED (no side-effects)', async () => {
@@ -115,17 +115,17 @@ describe('Scenario: Expire a Reservation Session after timeout', () => {
     const staffId = 'staff-1'
 
     beforeEach(() => {
-      sessionRepo.seed(buildSession({ id: sessionId }))
+      sessionRepo.seed(buildSession({ externalId: sessionId }))
       // Previous room (soft-deleted, should NOT be expired again)
       reservationRepo.seed(buildReservation({
-        id: 'res-old',
+        externalId: 'res-old',
         sessionId,
         status: 'HOLD',
         deletedAt: new Date(),
       }))
       // Current room (active HOLD)
       reservationRepo.seed(buildReservation({
-        id: 'res-current',
+        externalId: 'res-current',
         sessionId,
         status: 'HOLD',
         deletedAt: null,
@@ -136,8 +136,8 @@ describe('Scenario: Expire a Reservation Session after timeout', () => {
       await consumer.handle(buildMessage({ sessionId, staffId }))
 
       const reservations = reservationRepo.getAll()
-      const current = reservations.find(r => r.id === 'res-current')!
-      const old = reservations.find(r => r.id === 'res-old')!
+      const current = reservations.find(r => r.externalId === 'res-current')!
+      const old = reservations.find(r => r.externalId === 'res-old')!
 
       expect(current.status).toBe('EXPIRED')
       // The old one was already soft-deleted with HOLD status — it shouldn't be touched

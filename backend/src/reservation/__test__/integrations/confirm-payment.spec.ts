@@ -65,7 +65,7 @@ describe('Scenario: Reservation Payment Confirmation', () => {
 
     it('When the payment is confirmed before expiration, then the reservation must be marked as CONFIRMED', async () => {
       const reservation = {
-        id: reservationId,
+        externalId: reservationId,
         sessionId: sessionId,
         roomId: 'room-1',
         checkIn: new Date('2026-10-10'),

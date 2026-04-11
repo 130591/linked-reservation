@@ -2,7 +2,7 @@ import { RouterRules, RoutingRule } from '@/notification/core/domain/router-rule
 import { RecipientType, NotificationChannel } from '@/notification/event'
 
 const makeRule = (overrides: Partial<RoutingRule> = {}): RoutingRule => ({
-  id: 'rule-1',
+  id: 1,
   stayId: 'hotel-1',
   eventType: 'reservation.confirmed',
   channel: 'WHATSAPP',
@@ -27,8 +27,8 @@ describe('Scenario: Routing notification rules to channels', () => {
 
   describe('Given a reservation is confirmed with both WhatsApp and Email rules active', () => {
     const rules = [
-      makeRule({ id: 'rule-whatsapp', channel: NotificationChannel.WHATSAPP }),
-      makeRule({ id: 'rule-email', channel: NotificationChannel.EMAIL }),
+      makeRule({ id: 1, channel: NotificationChannel.WHATSAPP }),
+      makeRule({ id: 2, channel: NotificationChannel.EMAIL }),
     ]
 
     it('When the system routes the message, then it should generate decisions for both channels', () => {
@@ -43,12 +43,12 @@ describe('Scenario: Routing notification rules to channels', () => {
 
       expect(decisions).toHaveLength(2)
       expect(decisions[0]).toEqual({
-        ruleId: 'rule-whatsapp',
+        ruleId: 1,
         channel: 'WHATSAPP',
         destination: '5511999990000'
       })
       expect(decisions[1]).toEqual({
-        ruleId: 'rule-email',
+        ruleId: 2,
         channel: 'EMAIL',
         destination: 'staff@hotel.com'
       })
@@ -58,8 +58,8 @@ describe('Scenario: Routing notification rules to channels', () => {
 
   describe('Given an inactive rule exists', () => {
     const rules = [
-      makeRule({ id: 'rule-inactive', active: false, channel: NotificationChannel.EMAIL }),
-      makeRule({ id: 'rule-active', channel: NotificationChannel.WHATSAPP }),
+      makeRule({ id: 3, active: false, channel: NotificationChannel.EMAIL }),
+      makeRule({ id: 4, channel: NotificationChannel.WHATSAPP }),
     ]
 
     it('When the system resolves, then only the active rule should produce a decision', () => {
@@ -73,14 +73,14 @@ describe('Scenario: Routing notification rules to channels', () => {
       })
 
       expect(decisions).toHaveLength(1)
-      expect(decisions[0].ruleId).toBe('rule-active')
+      expect(decisions[0].ruleId).toBe(4)
     })
   })
 
   describe('Given a recipient has only email and no phone', () => {
     const rules = [
-      makeRule({ id: 'rule-whatsapp', channel: NotificationChannel.WHATSAPP }),
-      makeRule({ id: 'rule-email', channel: NotificationChannel.EMAIL })
+      makeRule({ id: 5, channel: NotificationChannel.WHATSAPP }),
+      makeRule({ id: 6, channel: NotificationChannel.EMAIL })
     ]
 
     it('When the system routes, then only Email should produce a decision (WhatsApp has no destination)', () => {
@@ -105,7 +105,7 @@ describe('Scenario: Quiet hours suppress notifications', () => {
   describe('Given quiet hours are configured from 22:00 to 08:00', () => {
     const rules = [
       makeRule({
-        id: 'rule-quiet',
+        id: 7,
         channel: NotificationChannel.WHATSAPP,
         quietHoursStart: '22:00',
         quietHoursEnd: '23:59'
@@ -136,7 +136,7 @@ describe('Scenario: Quiet hours suppress notifications', () => {
       })
 
       expect(decisions).toHaveLength(1)
-      expect(decisions[0].ruleId).toBe('rule-quiet')
+      expect(decisions[0].ruleId).toBe(7)
     })
   })
 
@@ -162,7 +162,7 @@ describe('Scenario: Quiet hours suppress notifications', () => {
   describe('Given a rule has invalid quiet hours format', () => {
     const rules = [
       makeRule({
-        id: 'rule-broken',
+        id: 8,
         quietHoursStart: 'INVALID',
         quietHoursEnd: 'ALSO_INVALID'
       })
@@ -181,7 +181,7 @@ describe('Scenario: Quiet hours suppress notifications', () => {
       expect(decisions).toHaveLength(0)
       expect(skipped).toHaveLength(1)
       expect(skipped[0].code).toBe('ROUTING_RULE_INVALID')
-      expect(skipped[0].ruleId).toBe('rule-broken')
+      expect(skipped[0].ruleId).toBe(8)
     })
   })
 })

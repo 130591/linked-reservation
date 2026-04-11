@@ -30,10 +30,10 @@ const repositories = [
         if (!options) {
           throw new Error('Invalid options passed')
         }
-        return addTransactionalDataSource({
-          name: options.name,
-          dataSource: new DataSource(options),
-        })
+        const dataSource = new DataSource(options)
+        // Register as 'default' so @Transactional() without a name works
+        addTransactionalDataSource({ name: 'default', dataSource })
+        return addTransactionalDataSource({ name: options.name, dataSource })
       },
     }),
   ],

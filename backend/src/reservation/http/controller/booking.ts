@@ -34,7 +34,7 @@ export class BookingController {
     @Body() body: SelectRoomDto
   ) {
     const result = await this.selectRoomService.handle({
-      sessionId: session.id,
+      sessionId: session.externalId,
       roomId: body.roomId
     })
 

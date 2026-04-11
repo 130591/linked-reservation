@@ -31,7 +31,7 @@ export class ExpireSessionConsumer {
     if (!session || session.status !== 'ACTIVE') return
 
     const result = await this.sessionRepo.update(
-      { id: sessionId, status: 'ACTIVE' },
+      { externalId: sessionId, status: 'ACTIVE' } as any,
       { status: 'EXPIRED' }
     )
 

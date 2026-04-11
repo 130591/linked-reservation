@@ -47,7 +47,7 @@ describe('Scenario: Auth0 JWT Guard — authentication and authorization', () =>
   let propertyRepo: jest.Mocked<PropertyRepository>
 
   const staffMember = new IdentityStaffMemberEntity({
-    id: 'staff-uuid',
+    externalId: 'staff-uuid',
     auth0Sub: 'auth0|user-123',
     email: 'admin@pousada.com',
     name: 'João Silva',
@@ -57,7 +57,7 @@ describe('Scenario: Auth0 JWT Guard — authentication and authorization', () =>
   })
 
   const activeProperty = new PropertyEntity({
-    id: 'property-uuid',
+    externalId: 'property-uuid',
     name: 'Pousada Beira Mar',
     type: 'pousada',
     status: 'active',
@@ -124,7 +124,7 @@ describe('Scenario: Auth0 JWT Guard — authentication and authorization', () =>
 
       propertyRepo.findOneById.mockResolvedValueOnce(
         new PropertyEntity({
-          id: 'property-uuid',
+          externalId: 'property-uuid',
           name: 'Pousada Beira Mar',
           type: 'pousada',
           status: 'trial',
@@ -146,7 +146,7 @@ describe('Scenario: Auth0 JWT Guard — authentication and authorization', () =>
 
       propertyRepo.findOneById.mockResolvedValueOnce(
         new PropertyEntity({
-          id: 'property-uuid',
+          externalId: 'property-uuid',
           name: 'Pousada Beira Mar',
           type: 'pousada',
           status: 'trial',
@@ -164,7 +164,7 @@ describe('Scenario: Auth0 JWT Guard — authentication and authorization', () =>
     it('When the guard runs, then a ForbiddenException is thrown', async () => {
       propertyRepo.findOneById.mockResolvedValueOnce(
         new PropertyEntity({
-          id: 'property-uuid',
+          externalId: 'property-uuid',
           name: 'Pousada Beira Mar',
           type: 'pousada',
           status: 'suspended',

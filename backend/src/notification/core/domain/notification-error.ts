@@ -38,7 +38,7 @@ export interface InvalidDestinationError extends BaseNotificationError {
 
 export interface RoutingRuleInvalidError extends BaseNotificationError {
   readonly code: 'ROUTING_RULE_INVALID'
-  readonly ruleId: string
+  readonly ruleId: number
   readonly cause: string
 }
 
@@ -84,7 +84,7 @@ export const NotificationError = {
     message: `No implementation found for channel ${channel}`,
   }),
 
-  ROUTING_RULE_INVALID: (ruleId: string, cause: string): RoutingRuleInvalidError => ({
+  ROUTING_RULE_INVALID: (ruleId: number, cause: string): RoutingRuleInvalidError => ({
     code: 'ROUTING_RULE_INVALID',
     ruleId,
     cause,
