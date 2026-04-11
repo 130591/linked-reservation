@@ -3,7 +3,7 @@ import { Column, Entity } from 'typeorm'
 
 export type IdentityRole = 'property_admin' | 'staff'
 
-@Entity('identity_staff_members')
+@Entity({ name: 'identity_staff_members', schema: 'identity' })
 export class IdentityStaffMemberEntity extends DefaultEntity<IdentityStaffMemberEntity> {
   @Column({ name: 'auth0_sub', unique: true })
   auth0Sub: string

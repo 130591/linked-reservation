@@ -4,7 +4,7 @@ import { Column, Entity } from 'typeorm'
 export type PropertyType = 'hotel' | 'pousada' | 'hostel' | 'other'
 export type PropertyStatus = 'trial' | 'active' | 'suspended'
 
-@Entity('properties')
+@Entity({ name: 'properties', schema: 'identity' })
 export class PropertyEntity extends DefaultEntity<PropertyEntity> {
   @Column()
   name: string

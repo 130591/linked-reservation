@@ -1,7 +1,7 @@
 import { DefaultEntity } from "@/common/database"
 import { Column, Entity } from "typeorm"
 
-@Entity('rooms')
+@Entity({ name: 'rooms', schema: 'reservation' })
 export class RoomEntity extends DefaultEntity<RoomEntity> {
   @Column()
   name: string

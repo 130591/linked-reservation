@@ -5,7 +5,7 @@ export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED' | 'DELIVERED'
 export type NotificationChannel = 'WHATSAPP' | 'EMAIL'
 export type RecipientType = 'STAFF' | 'CUSTOMER'
 
-@Entity('notifications')
+@Entity({ name: 'notifications', schema: 'notification' })
 export class NotificationEntity extends DefaultEntity<NotificationEntity> {
 
   @Column({ name: 'recipient_id', type: 'uuid' })

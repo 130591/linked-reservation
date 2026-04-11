@@ -10,7 +10,7 @@ export const dataSourceOptionsFactory = (
   username: configService.get('database.username'),
   password: configService.get('database.password'),
   database: configService.get('database.database'),
-  synchronize: true, // Set to false in production
+  synchronize: false,
   autoLoadEntities: true,
   logging: false,
 })

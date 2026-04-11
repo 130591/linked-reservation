@@ -1,7 +1,7 @@
 import { DefaultEntity } from '@/common/database'
 import { Column, Entity } from 'typeorm'
 
-@Entity('outbox_events')
+@Entity({ name: 'outbox_events', schema: 'common' })
 export class OutboxEventEntity extends DefaultEntity<OutboxEventEntity> {
   @Column({ type: 'varchar' })
   queue: string

@@ -2,21 +2,27 @@ import { randomUUID } from 'crypto'
 import {
   BeforeInsert,
   BeforeUpdate,
+  Column,
   CreateDateColumn,
   DeleteDateColumn,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm'
 
 /**
- * Do not extend TypeORM's BaseEntity to avoid coupling with TypeORM
+ * id         — BIGSERIAL primary key, internal only (fast joins/indexes)
+ * externalId — UUID, exposed via API/URLs
+ *
+ * Do not extend TypeORM's BaseEntity to avoid coupling with TypeORM.
  */
 export abstract class DefaultEntity<T> {
   constructor(data?: Partial<T>) {
     if (data) {
       Object.assign(this, data)
     }
-    this.id = this.id || randomUUID()
+    if (!this.externalId) {
+      this.externalId = randomUUID()
+    }
   }
 
   @BeforeInsert()
@@ -30,15 +36,18 @@ export abstract class DefaultEntity<T> {
     this.updatedAt = new Date()
   }
 
-  @PrimaryColumn({ type: 'uuid' })
-  id: string
+  @PrimaryGeneratedColumn({ type: 'bigint' })
+  id: number
 
-  @CreateDateColumn()
+  @Column({ name: 'external_id', type: 'uuid', unique: true, default: () => 'gen_random_uuid()' })
+  externalId: string
+
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date
 
-  @DeleteDateColumn({ nullable: true })
+  @DeleteDateColumn({ name: 'deleted_at', nullable: true })
   deletedAt: Date | null
 }

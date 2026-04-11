@@ -3,7 +3,7 @@ import { Column, Entity } from "typeorm"
 
 export type StaffRole = 'ATTENDANT' | 'MANAGER' | 'OWNER'
 
-@Entity('staff_members')
+@Entity({ name: 'staff_members', schema: 'reservation' })
 export class StaffMemberEntity extends DefaultEntity<StaffMemberEntity> {
   @Column({ name: 'stay_id', type: 'uuid' })
   stayId: string

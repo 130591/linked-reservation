@@ -4,7 +4,7 @@ import { Column, Entity, Exclusion } from 'typeorm'
 
 export type ReservationEntityStatus = 'HOLD' | 'CONFIRMED' | 'EXPIRED'
 
-@Entity('reservations')
+@Entity({ name: 'reservations', schema: 'reservation' })
 @Exclusion(
   `USING gist (room_id WITH =, tstzrange(check_in, check_out, '[]') WITH &&) WHERE ("status" IN ('HOLD', 'CONFIRMED') AND "deleted_at" IS NULL)`,
 )
@@ -16,10 +16,10 @@ export class ReservationEntity extends DefaultEntity<ReservationEntity> {
   @Column({ name: 'session_id', type: 'uuid' })
   sessionId: string
 
-  @Column({ name: 'check_in', type: 'date' })
+  @Column({ name: 'check_in', type: 'timestamptz' })
   checkIn: Date
 
-  @Column({ name: 'check_out', type: 'date' })
+  @Column({ name: 'check_out', type: 'timestamptz' })
   checkOut: Date
 
   @Column({ type: 'text', default: 'HOLD' })

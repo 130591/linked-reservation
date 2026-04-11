@@ -2,7 +2,7 @@
 import { DefaultEntity } from '@/common/database'
 import { Column, Entity } from 'typeorm'
 
-@Entity('routing_rule')
+@Entity({ name: 'routing_rules', schema: 'notification' })
 export class RoutingRuleEntity extends DefaultEntity<RoutingRuleEntity> {
   @Column()
   stayId: string

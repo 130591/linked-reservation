@@ -3,7 +3,7 @@ import { Column, Entity } from "typeorm"
 
 export type StayType = 'HOTEL' | 'POUSADA' | 'HOSTEL' | 'APARTMENT'
 
-@Entity('stays')
+@Entity({ name: 'stays', schema: 'reservation' })
 export class StayEntity extends DefaultEntity<StayEntity> {
   @Column()
   name: string

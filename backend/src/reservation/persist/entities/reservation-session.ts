@@ -3,7 +3,7 @@ import { Column, Entity } from "typeorm"
 
 export type SessionStatus = 'ACTIVE' | 'COMPLETED' | 'EXPIRED'
 
-@Entity('reservation_sessions')
+@Entity({ name: 'reservation_sessions', schema: 'reservation' })
 export class ReservationSessionEntity extends DefaultEntity<ReservationSessionEntity> {
   @Column({ name: 'stay_id', type: 'uuid' })
   stayId: string
@@ -11,10 +11,10 @@ export class ReservationSessionEntity extends DefaultEntity<ReservationSessionEn
   @Column({ name: 'stay_name', type: 'varchar' })
   stayName: string
 
-  @Column({ name: 'check_in', type: 'date' })
+  @Column({ name: 'check_in', type: 'timestamptz' })
   checkIn: Date
 
-  @Column({ name: 'check_out', type: 'date' })
+  @Column({ name: 'check_out', type: 'timestamptz' })
   checkOut: Date
 
   @Column()
@@ -23,10 +23,7 @@ export class ReservationSessionEntity extends DefaultEntity<ReservationSessionEn
   @Column({ name: 'staff_id', type: 'uuid' })
   staffId: string
 
-  @Column({
-    type: 'text',
-    default: "'ACTIVE'",
-  })
+  @Column({ type: 'text', default: 'ACTIVE' })
   status: SessionStatus
 
   @Column({ name: 'expires_at', type: 'timestamp' })
