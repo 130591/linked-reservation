@@ -39,15 +39,18 @@ export class IntentExtractorService {
       const response = await this.client.messages.create({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 300,
-        messages: [{ role: 'user', content: prompt }]
+        messages: [
+          { role: 'user', content: prompt },
+          { role: 'assistant', content: '{' }
+        ]
       })
 
-      const text = response.content
+      const raw = response.content
         .filter(b => b.type === 'text')
         .map(b => b.text)
         .join('')
 
-      const parsed = JSON.parse(text) as LLMResponse
+      const parsed = JSON.parse('{' + raw) as LLMResponse
 
       return {
         intent: parsed.intent,
