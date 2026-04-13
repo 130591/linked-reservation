@@ -1,4 +1,4 @@
-import { DefaultEntity } from '@/common/database'
+import { DefaultEntity } from '@/common/database/entities'
 import { Reservation } from '@/reservation/core/domain'
 import { Column, Entity, Exclusion } from 'typeorm'
 

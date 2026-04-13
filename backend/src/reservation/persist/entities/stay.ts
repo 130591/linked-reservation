@@ -1,4 +1,4 @@
-import { DefaultEntity } from "@/common/database"
+import { DefaultEntity } from "@/common/database/entities"
 import { Column, Entity } from "typeorm"
 
 export type StayType = 'HOTEL' | 'POUSADA' | 'HOSTEL' | 'APARTMENT'

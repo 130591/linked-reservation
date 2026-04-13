@@ -1,5 +1,5 @@
 
-import { DefaultEntity } from '@/common/database'
+import { DefaultEntity } from '@/common/database/entities'
 import { Column, Entity } from 'typeorm'
 
 @Entity({ name: 'routing_rules', schema: 'notification' })
