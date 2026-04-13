@@ -1,3 +1,3 @@
 export const ReservationInternalQueues = {
-  SESSION_EXPIRE: 'reservation.session.expire',
+  SESSION_EXPIRE: 'reservation_session_expire',
 } as const

@@ -16,7 +16,14 @@ export class OutboxPublisherJob {
     private readonly outboxRepo: OutboxRepository,
     private readonly config: ConfigService
   ) {
-    this.client = new SQSClient({ region: this.config.get('awsRegion') })
+    this.client = new SQSClient({
+      region: this.config.get('awsRegion'),
+      endpoint: this.config.get('sqsBaseUrl'),
+      credentials: {
+        accessKeyId: this.config.get('accessKeyId'),
+        secretAccessKey: this.config.get('secretAccessKey'),
+      }
+    })
     this.baseUrl = this.config.get('sqsBaseUrl')
   }
 
@@ -52,7 +59,7 @@ export class OutboxPublisherJob {
 
   private async publishToSqs(event: OutboxEventEntity): Promise<void> {
     await this.client.send(new SendMessageCommand({
-      QueueUrl: `${this.baseUrl}/${event.queue}`,
+      QueueUrl: `${this.baseUrl}/000000000000/${event.queue.replace(/\./g, '_')}`,
       MessageBody: JSON.stringify(event.payload),
       MessageDeduplicationId: event.externalId, // idempotency on the SQS FIFO
       MessageGroupId: event.queue,

@@ -10,7 +10,12 @@ export class SqsEventBus implements EventBus {
 
   constructor(private readonly config: ConfigService) {
     this.client = new SQSClient({
-      region: this.config.get('awsRegion')
+      region: this.config.get('awsRegion'),
+      endpoint: this.config.get('sqsBaseUrl'),
+      credentials: {
+        accessKeyId: this.config.get('accessKeyId'),
+        secretAccessKey: this.config.get('secretAccessKey'),
+      }
     })
     this.baseUrl = this.config.get('sqsBaseUrl')
   }
@@ -21,7 +26,7 @@ export class SqsEventBus implements EventBus {
     options?: PublishOptions
   ): Promise<void> {
     await this.client.send(new SendMessageCommand({
-      QueueUrl: `${this.baseUrl}/${queue}`,
+      QueueUrl: `${this.baseUrl}/000000000000/${queue.replace(/\./g, '_')}`,
       MessageBody: JSON.stringify(payload),
       DelaySeconds: options?.delaySeconds ?? 0
     }))

@@ -43,5 +43,5 @@ export function mapEventToQueue(eventQueue: EventQueueType): QueueNameType {
  * Gets full SQS queue URL
  */
 export function getQueueUrl(queueName: QueueNameType, baseUrl: string): string {
-  return `${baseUrl.replace('localhost:4566', 'sqs.us-east-1.localhost.localstack.cloud:4566')}/000000000000/${queueName}`
+  return `${baseUrl}/000000000000/${queueName}`
 }

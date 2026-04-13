@@ -40,24 +40,19 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-  localstack:
-    image: localstack/localstack
-    container_name: linked_reservation_localstack
-    environment:
-      - AWS_DEFAULT_REGION=us-east-1
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-      - LOCALSTACK_ACKNOWLEDGE_ACCOUNT_REQUIREMENT=1
+  elasticmq:
+    image: softwaremill/elasticmq-native:latest
+    container_name: linked_reservation_elasticmq
     ports:
-      - "4566:4566"
-      - "4510-4559:4510-4559"
+      - "9324:9324"
+      - "9325:9325"
     volumes:
-      - localstack_data:/var/lib/localstack
+      - ./scripts/elasticmq.conf:/opt/elasticmq.conf
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:4566/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost:9325 || exit 1"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
     restart: unless-stopped
     logging:
       driver: "json-file"
@@ -67,4 +62,3 @@ services:
 
 volumes:
   postgres_data:
-  localstack_data:
