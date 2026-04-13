@@ -1,4 +1,4 @@
-import { DefaultEntity } from '@/common/database'
+import { DefaultEntity } from '@/common/database/entities'
 import { Column, Entity } from 'typeorm'
 
 export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED' | 'DELIVERED'
@@ -8,7 +8,7 @@ export type RecipientType = 'STAFF' | 'CUSTOMER'
 @Entity({ name: 'notifications', schema: 'notification' })
 export class NotificationEntity extends DefaultEntity<NotificationEntity> {
 
-  @Column({ name: 'recipient_id', type: 'uuid' })
+  @Column({ name: 'recipient_id', type: 'varchar' })
   recipientId: string
 
   @Column({ name: 'recipient_type', type: 'varchar' })

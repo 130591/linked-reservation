@@ -21,11 +21,16 @@ export class NotificationService {
 
   @Transactional()
   async dispatch(event: NotificationEvent): Promise<void> {
-    await Promise.allSettled(
+    const results = await Promise.allSettled(
       event.recipients.map(recipient =>
         this.dispatchToRecipient(event, recipient)
       )
     )
+    results.forEach((result, i) => {
+      if (result.status === 'rejected') {
+        this.logger.error(`dispatch failed for recipient[${i}]`, result.reason)
+      }
+    })
   }
 
   private async dispatchToRecipient(
@@ -86,7 +91,6 @@ export class NotificationService {
       })
     )
 
-    // ── Channel Send (Result) ──
     const channelImpl = this.channelImpls.find(c => c.supports(channel))
     if (!channelImpl) {
       const error = NotificationError.NO_CHANNEL_IMPLEMENTATION(channel)
