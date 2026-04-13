@@ -1,7 +1,7 @@
-import { DefaultEntity } from "@/common/database"
+import { DefaultEntity } from "@/common/database/entities"
 import { Column, Entity } from "typeorm"
 
-export type StaffRole = 'ATTENDANT' | 'MANAGER' | 'OWNER'
+export type StaffRole = 'ATTENDANT' | 'MANAGER' | 'OWNER' | 'BOT'
 
 @Entity({ name: 'staff_members', schema: 'reservation' })
 export class StaffMemberEntity extends DefaultEntity<StaffMemberEntity> {

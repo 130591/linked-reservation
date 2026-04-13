@@ -64,14 +64,25 @@ export class ConversationService {
   }
 
   private async handleReady(message: InboundMessage, state: ConversationState): Promise<void> {
-    const stay = await this.stayRepo.findOneById(state.stayId)
+    const [stay, botStaffId] = await Promise.all([
+      this.stayRepo.findOneById(state.stayId),
+      this.reservationAPI.findBotStaffId(state.stayId),
+    ])
+
+    if (!botStaffId) {
+      this.logger.error(`No BOT staff member found for stay ${state.stayId}`)
+      await this.notifier.reply(message.phone, message.stayId,
+        'Não foi possível gerar o link no momento. Por favor, entre em contato diretamente conosco.'
+      )
+      return
+    }
 
     const linkResult = await this.reservationAPI.generate({
       stayId:       state.stayId,
       checkIn:      new Date(state.checkIn!),
       checkOut:     new Date(state.checkOut!),
       guests:       state.guests!,
-      staffId:      'system',
+      staffId:      botStaffId,
       stayName:     stay?.name ?? 'Hotel',
       customerName: state.customerName!,
     })
@@ -86,7 +97,12 @@ export class ConversationService {
     }
 
     const { token, expiresAt } = linkResult.value
-    await this.notifier.reply(message.phone, message.stayId, this.buildLinkMessage(token, expiresAt))
+    this.logger.log(`Link generated — token: ${token}, notifying ${message.phone}`)
+    try {
+      await this.notifier.reply(message.phone, message.stayId, this.buildLinkMessage(token, expiresAt))
+    } catch (error) {
+      this.logger.error('notifier.reply failed', error)
+    }
     await this.stateRepo.save({ ...state, step: 'LINK_SENT' })
   }
 

@@ -10,7 +10,6 @@ import { IntentExtractorService } from './core/service'
 import { ConversationStateRepository } from './persist'
 import { StayRepository } from '@/reservation/persist/repositories/stay.repository'
 import { CONVERSATION_NOTIFIER } from './core/contract'
-import { ReservationAPI } from '@/reservation/external-api'
 import { SqsEventBus } from '@/common/messaging/sqs-event-bus'
 import { EVENT_BUS } from '@/common/messaging/event-bus.interface'
 
@@ -30,7 +29,6 @@ import { EVENT_BUS } from '@/common/messaging/event-bus.interface'
     StayRepository,
     SyncConversationNotifier,
     AsyncConversationNotifier,
-    ReservationAPI,
     SqsEventBus,
     {
       provide: EVENT_BUS,

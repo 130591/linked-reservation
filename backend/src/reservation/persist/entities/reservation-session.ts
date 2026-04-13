@@ -1,4 +1,4 @@
-import { DefaultEntity } from "@/common/database"
+import { DefaultEntity } from "@/common/database/entities"
 import { Column, Entity } from "typeorm"
 
 export type SessionStatus = 'ACTIVE' | 'COMPLETED' | 'EXPIRED'
@@ -20,8 +20,8 @@ export class ReservationSessionEntity extends DefaultEntity<ReservationSessionEn
   @Column()
   guests: number
 
-  @Column({ name: 'staff_id', type: 'uuid' })
-  staffId: string
+  @Column({ name: 'staff_id', type: 'uuid', nullable: true })
+  staffId: string | null
 
   @Column({ type: 'text', default: 'ACTIVE' })
   status: SessionStatus

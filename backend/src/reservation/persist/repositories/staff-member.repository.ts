@@ -11,6 +11,14 @@ export class StaffMemberRepository extends DefaultTypeOrmRepository<StaffMemberE
     super(StaffMemberEntity, dataSource.manager)
   }
 
+  async findOwner(stayId: string): Promise<StaffMemberEntity | null> {
+    return this.findOne({ where: { stayId, role: 'OWNER' } as any })
+  }
+
+  async findBot(stayId: string): Promise<StaffMemberEntity | null> {
+    return this.findOne({ where: { stayId, role: 'BOT' } as any })
+  }
+
   async findByStay(stayId: string): Promise<StaffMemberEntity[]> {
     return this.find({ 
       where: { stayId } as any,
