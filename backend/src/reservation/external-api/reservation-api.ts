@@ -34,4 +34,9 @@ export class ReservationAPI {
     const bot = await this.staffMemberRepo.findBot(stayId)
     return bot?.externalId ?? null
   }
+
+  async findStayIdByWhatsAppNumber(whatsappNumber: string): Promise<string | null> {
+    const stay = await this.stayRepo.findByWhatsAppNumber(whatsappNumber)
+    return stay?.externalId ?? null
+  }
 }

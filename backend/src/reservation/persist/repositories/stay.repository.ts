@@ -15,6 +15,10 @@ export class StayRepository extends DefaultTypeOrmRepository<StayEntity> {
     return this.findOne({ where: { phone } as any })
   }
 
+  async findByWhatsAppNumber(whatsappNumber: string): Promise<StayEntity | null> {
+    return this.findOne({ where: { whatsappNumber } as any })
+  }
+
   protected toDomain(row: any): StayEntity {
     return new StayEntity({
       id: row.id,

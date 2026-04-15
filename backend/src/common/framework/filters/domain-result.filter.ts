@@ -23,24 +23,15 @@ const HTTP_STATUS: Record<DomainErrorCode, number> = {
   EVENT_PUBLISH_FAILED: 500,
   ROOM_NOT_AVAILABLE: 409,
   SESSION_EXPIRED: 410,
-  ROOM_NOT_FOUND: 404
-}
-
-function isDomainError(exception: unknown): exception is DomainError {
-  return (
-    typeof exception === 'object' &&
-    exception !== null &&
-    'code' in exception &&
-    'message' in exception &&
-    (exception as DomainError).code in HTTP_STATUS
-  )
+  ROOM_NOT_FOUND: 404,
+  CHANNEL_NOT_CONFIGURED: 400
 }
 
 @Catch()
-export class DomainErrorFilter implements ExceptionFilter {
+export class DomainErrorFilter implements ExceptionFilter {  
   catch(exception: unknown, host: ArgumentsHost) {
     // Allow pass through to the default NestJS handler if it's not a domain error
-    if (!isDomainError(exception)) throw exception
+    if (!this.isDomainError(exception)) throw exception
 
     const response = host.switchToHttp().getResponse<Response>()
     const status = HTTP_STATUS[exception.code]
@@ -51,5 +42,15 @@ export class DomainErrorFilter implements ExceptionFilter {
       message,
       ...rest
     })
+  }
+
+  private isDomainError(exception: unknown): exception is DomainError {
+    return (
+      typeof exception === 'object' &&
+      exception !== null &&
+      'code' in exception &&
+      'message' in exception &&
+      (exception as DomainError).code in HTTP_STATUS
+   )
   }
 }

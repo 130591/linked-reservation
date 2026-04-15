@@ -20,6 +20,7 @@ export type DomainErrorCode =
   | 'ROOM_NOT_AVAILABLE'
   | 'SESSION_EXPIRED'
   | 'ROOM_NOT_FOUND'
+  | 'CHANNEL_NOT_CONFIGURED'
 
 export interface BaseDomainError {
   readonly code: DomainErrorCode
@@ -149,5 +150,10 @@ export const DomainError = {
   SESSION_EXPIRED: (): DomainError => ({
     code: 'SESSION_EXPIRED',
     message: 'This booking link has expired',
+  }),
+
+  CHANNEL_NOT_CONFIGURED: (channel: string): DomainError => ({
+    code: 'CHANNEL_NOT_CONFIGURED',
+    message: `No stay configured for channel address ${channel}`,
   }),
 } as const

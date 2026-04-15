@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { ConfigService } from '@/common/config/service/config.service'
-import { ConversationService, InboundMessage } from '../../core/service/conversation.service'
+import { ConversationService, InboundWhatsAppMessage } from '../../core/service/conversation.service'
 import { IntentExtractorService } from '../../core/service/intent-extractor.service'
 import { ConversationFlowService } from '../../core/service/conversation-flow.service'
 import { ConversationStateRepository } from '../../../conversation/persist'
@@ -19,8 +19,9 @@ describe('Scenario: Full WhatsApp Reservation Flow', () => {
   let stayRepo: jest.Mocked<StayRepository>
   let notifier: jest.Mocked<ConversationNotifier>
 
-  const PHONE = '5511999990000'
+  const PHONE = '+5511999990000'
   const STAY_ID = 'stay-123'
+  const TO_WHATSAPP = 'whatsapp:+5511988887777'
 
   beforeEach(async () => {
     intentExtractor = { extract: jest.fn() } as any
@@ -30,7 +31,11 @@ describe('Scenario: Full WhatsApp Reservation Flow', () => {
       find: jest.fn(),
       save: jest.fn().mockResolvedValue(undefined),
     } as any
-    reservationAPI = { generate: jest.fn() } as any
+    reservationAPI = {
+      generate: jest.fn(),
+      findStayIdByWhatsAppNumber: jest.fn().mockResolvedValue(STAY_ID),
+      findBotStaffId: jest.fn().mockResolvedValue('bot-staff-id'),
+    } as any
     stayRepo = { findOneById: jest.fn() } as any
     notifier = { reply: jest.fn().mockResolvedValue(undefined) } as any
     
@@ -57,10 +62,10 @@ describe('Scenario: Full WhatsApp Reservation Flow', () => {
     service = module.get<ConversationService>(ConversationService)
   })
 
-  const makeMessage = (body: string): InboundMessage => ({
+  const makeMessage = (body: string): InboundWhatsAppMessage => ({
     messageId: 'msg-' + Math.random(),
-    phone: PHONE,
-    stayId: STAY_ID,
+    from: `whatsapp:${PHONE}`,
+    to: TO_WHATSAPP,
     body,
   })
 
@@ -85,7 +90,8 @@ describe('Scenario: Full WhatsApp Reservation Flow', () => {
       expect(notifier.reply).toHaveBeenCalledWith(
         PHONE,
         STAY_ID,
-        expect.stringContaining('Para quantas pessoas')
+        expect.stringContaining('Para quantas pessoas'),
+        expect.any(String),
       )
 
       // Verify state was saved correctly
@@ -122,7 +128,8 @@ describe('Scenario: Full WhatsApp Reservation Flow', () => {
       expect(notifier.reply).toHaveBeenCalledWith(
         PHONE,
         STAY_ID,
-        expect.stringContaining('para quem seria a reserva')
+        expect.stringContaining('para quem seria a reserva'),
+        expect.any(String),
       )
 
       expect(stateRepo.save).toHaveBeenCalledWith(expect.objectContaining({
@@ -172,7 +179,8 @@ describe('Scenario: Full WhatsApp Reservation Flow', () => {
       expect(notifier.reply).toHaveBeenCalledWith(
         PHONE,
         STAY_ID,
-        expect.stringContaining('Aqui está seu link de reserva')
+        expect.stringContaining('Aqui está seu link de reserva'),
+        expect.any(String),
       )
 
       expect(reservationAPI.generate).toHaveBeenCalledWith(expect.objectContaining({
@@ -185,6 +193,23 @@ describe('Scenario: Full WhatsApp Reservation Flow', () => {
         step: 'LINK_SENT',
         customerName: 'Everton Paixão'
       }))
+    })
+  })
+
+  describe('Given a message arrives for a WhatsApp number not linked to any stay', () => {
+    it('When the service handles it, Then it returns a CHANNEL_NOT_CONFIGURED domain error and does not touch state', async () => {
+      reservationAPI.findStayIdByWhatsAppNumber.mockResolvedValue(null)
+
+      const result = await service.handle(makeMessage('Hi, I want to book'))
+
+      expect(result.isErr()).toBe(true)
+      expect(result._unsafeUnwrapErr()).toEqual(expect.objectContaining({
+        code: 'CHANNEL_NOT_CONFIGURED',
+      }))
+
+      // Invariant: the message must not be marked as processed,
+      // otherwise a retry after the stay is configured would be silently dropped.
+      expect(stateRepo.markProcessed).not.toHaveBeenCalled()
     })
   })
 })

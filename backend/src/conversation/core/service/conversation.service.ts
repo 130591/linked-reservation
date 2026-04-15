@@ -1,5 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
+import { err, ok, Result } from 'neverthrow'
 import { ConfigService } from '@/common/config/service/config.service'
+import { DomainError } from '@/common/exceptions/domain-error'
 import { ConversationStateRepository } from '@/conversation/persist'
 import { IntentExtractorService } from './intent-extractor.service'
 import { ConversationFlowService } from './conversation-flow.service'
@@ -7,7 +9,14 @@ import { CONVERSATION_NOTIFIER, ConversationNotifier, ConversationState } from '
 import { ReservationAPI } from '@/reservation/external-api'
 import { StayRepository } from '@/reservation/persist'
 
-export interface InboundMessage {
+export interface InboundWhatsAppMessage {
+  messageId: string
+  from: string
+  to: string
+  body: string
+}
+
+interface ResolvedMessage {
   messageId: string
   phone: string
   stayId: string
@@ -34,10 +43,15 @@ export class ConversationService {
     this.bookingBaseUrl = this.config.get('bookingBaseUrl')
   }
 
-  async handle(message: InboundMessage): Promise<void> {
+  async handle(inbound: InboundWhatsAppMessage): Promise<Result<void, DomainError>> {
+    const enriched = await this.enrich(inbound)
+    if (enriched.isErr()) return err(enriched.error)
+
+    const message = enriched.value
+
     if (await this.stateRepo.isProcessed(message.messageId)) {
       this.logger.warn(`Duplicate message ignored: ${message.messageId}`)
-      return
+      return ok(undefined)
     }
 
     await this.stateRepo.markProcessed(message.messageId)
@@ -46,7 +60,7 @@ export class ConversationService {
       await this.stateRepo.find(message.phone, message.stayId) ??
       this.flow.initialState(message.phone, message.stayId)
 
-    if (BLOCKED_STEPS.has(state.step)) return
+    if (BLOCKED_STEPS.has(state.step)) return ok(undefined)
 
     const intent = await this.intentExtractor.extract(message.body, state)
 
@@ -57,13 +71,24 @@ export class ConversationService {
 
     if (result.ready) {
       await this.handleReady(message, result.nextState)
-      return
+      return ok(undefined)
     }
 
-    await this.notifier.reply(message.phone, message.stayId, result.response)
+    await this.notifier.reply(message.phone, message.stayId, result.response, message.messageId)
+    return ok(undefined)
   }
 
-  private async handleReady(message: InboundMessage, state: ConversationState): Promise<void> {
+  private async enrich(inbound: InboundWhatsAppMessage): Promise<Result<ResolvedMessage, DomainError>> {
+    const to = inbound.to.startsWith('whatsapp:') ? inbound.to : `whatsapp:${inbound.to}`
+    const phone = inbound.from.replace('whatsapp:', '')
+
+    const stayId = await this.reservationAPI.findStayIdByWhatsAppNumber(to)
+    if (!stayId) return err(DomainError.CHANNEL_NOT_CONFIGURED(to))
+
+    return ok({ messageId: inbound.messageId, phone, stayId, body: inbound.body })
+  }
+
+  private async handleReady(message: ResolvedMessage, state: ConversationState): Promise<void> {
     const [stay, botStaffId] = await Promise.all([
       this.stayRepo.findOneById(state.stayId),
       this.reservationAPI.findBotStaffId(state.stayId),
@@ -72,7 +97,8 @@ export class ConversationService {
     if (!botStaffId) {
       this.logger.error(`No BOT staff member found for stay ${state.stayId}`)
       await this.notifier.reply(message.phone, message.stayId,
-        'Não foi possível gerar o link no momento. Por favor, entre em contato diretamente conosco.'
+        'Não foi possível gerar o link no momento. Por favor, entre em contato diretamente conosco.',
+        message.messageId,
       )
       return
     }
@@ -90,7 +116,8 @@ export class ConversationService {
     if (linkResult.isErr()) {
       this.logger.error('GenerateLink failed', linkResult.error)
       await this.notifier.reply(message.phone, message.stayId,
-        `Não foi possível gerar o link: ${linkResult.error.message}\n\nTente informar outras datas.`
+        `Não foi possível gerar o link: ${linkResult.error.message}\n\nTente informar outras datas.`,
+        message.messageId,
       )
       await this.stateRepo.save({ ...state, step: 'ASK_DATES', checkIn: undefined, checkOut: undefined, guests: undefined })
       return
@@ -99,7 +126,7 @@ export class ConversationService {
     const { token, expiresAt } = linkResult.value
     this.logger.log(`Link generated — token: ${token}, notifying ${message.phone}`)
     try {
-      await this.notifier.reply(message.phone, message.stayId, this.buildLinkMessage(token, expiresAt))
+      await this.notifier.reply(message.phone, message.stayId, this.buildLinkMessage(token, expiresAt), message.messageId)
     } catch (error) {
       this.logger.error('notifier.reply failed', error)
     }
