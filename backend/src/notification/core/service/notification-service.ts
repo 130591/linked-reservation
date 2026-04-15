@@ -47,14 +47,19 @@ export class NotificationService {
       return
     }
 
-    const existing = await this.notificationRepo.findOne({
-      where: {
-        eventType: event.type,
-        recipientId: recipient.id,
-        channel
-      }
-    })
-    if (existing) return
+    // Dedup only when the caller provides an explicit idempotency key
+    // (e.g. Twilio MessageSid for replies, SQS MessageId for consumer events).
+    // Without a key the event is treated as non-idempotent and always dispatched.
+    if (event.idempotencyKey) {
+      const existing = await this.notificationRepo.findOne({
+        where: {
+          idempotencyKey: event.idempotencyKey,
+          recipientId: recipient.id,
+          channel
+        }
+      })
+      if (existing) return
+    }
 
     const renderResult = this.templateRenderer.render(
       event.type,
@@ -78,6 +83,7 @@ export class NotificationService {
     const body = renderResult.value
     const notification = await this.notificationRepo.save(
       new NotificationEntity({
+        idempotencyKey: event.idempotencyKey ?? null,
         recipientId: recipient.id,
         recipientType: recipient.type as any,
         channel,

@@ -8,6 +8,9 @@ export type RecipientType = 'STAFF' | 'CUSTOMER'
 @Entity({ name: 'notifications', schema: 'notification' })
 export class NotificationEntity extends DefaultEntity<NotificationEntity> {
 
+  @Column({ name: 'idempotency_key', type: 'varchar', nullable: true })
+  idempotencyKey: string | null
+
   @Column({ name: 'recipient_id', type: 'varchar' })
   recipientId: string
 

@@ -9,13 +9,14 @@ export class AsyncConversationNotifier implements ConversationNotifier {
     @Inject(EVENT_BUS) private readonly eventBus: EventBus
   ) { }
 
-  async reply(phone: string, stayId: string, message: string): Promise<void> {
+  async reply(phone: string, stayId: string, message: string, messageId?: string): Promise<void> {
     await this.eventBus.publish<ConversationReplyPayload>(
       EventQueues.CONVERSATION_REPLY,
       {
         phone,
         stayId,
-        message
+        message,
+        messageId,
       }
     )
   }

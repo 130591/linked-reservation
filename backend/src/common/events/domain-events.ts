@@ -65,6 +65,7 @@ export interface ConversationReplyPayload {
   phone: string
   stayId: string
   message: string
+  messageId?: string
 }
 
 export interface PropertyProvisionedPayload {

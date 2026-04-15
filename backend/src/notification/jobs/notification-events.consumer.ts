@@ -88,7 +88,8 @@ export class NotificationEventsConsumer {
     await this.notificationService.dispatch({
       type: DomainEvents.CONVERSATION_REPLY,
       recipients: [customerRecipient],
-      payload: { ...payload }
+      payload: { ...payload },
+      idempotencyKey: payload.messageId,
     })
   }
 

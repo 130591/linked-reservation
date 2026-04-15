@@ -8,7 +8,7 @@ import { RecipientType } from '../event'
 export class SyncConversationNotifier implements ConversationNotifier {
   constructor(private readonly notificationService: NotificationService) { }
 
-  async reply(phone: string, stayId: string, message: string): Promise<void> {
+  async reply(phone: string, stayId: string, message: string, messageId?: string): Promise<void> {
     await this.notificationService.dispatch({
       type: DomainEvents.CONVERSATION_REPLY,
       recipients: [{
@@ -17,7 +17,8 @@ export class SyncConversationNotifier implements ConversationNotifier {
         phone,
         name: 'Cliente'
       }],
-      payload: { message, stayId }
+      payload: { message, stayId },
+      idempotencyKey: messageId,
     })
   }
 }
