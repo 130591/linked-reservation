@@ -21,6 +21,7 @@ export type DomainErrorCode =
   | 'SESSION_EXPIRED'
   | 'ROOM_NOT_FOUND'
   | 'CHANNEL_NOT_CONFIGURED'
+  | 'MESSAGE_BUSY'
 
 export interface BaseDomainError {
   readonly code: DomainErrorCode
@@ -155,5 +156,10 @@ export const DomainError = {
   CHANNEL_NOT_CONFIGURED: (channel: string): DomainError => ({
     code: 'CHANNEL_NOT_CONFIGURED',
     message: `No stay configured for channel address ${channel}`,
+  }),
+
+  MESSAGE_BUSY: (): DomainError => ({
+    code: 'MESSAGE_BUSY',
+    message: 'Another message for this conversation is being processed; retry later',
   }),
 } as const

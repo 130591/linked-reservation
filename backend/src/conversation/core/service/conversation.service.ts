@@ -5,7 +5,14 @@ import { DomainError } from '@/common/exceptions/domain-error'
 import { ConversationStateRepository } from '@/conversation/persist'
 import { IntentExtractorService } from './intent-extractor.service'
 import { ConversationFlowService } from './conversation-flow.service'
-import { CONVERSATION_NOTIFIER, ConversationNotifier, ConversationState } from '../contract'
+import {
+  CONVERSATION_NOTIFIER,
+  CONVERSATION_LOCK,
+  ConversationNotifier,
+  ConversationLock,
+  ConversationState,
+  LockFailureReason,
+} from '../contract'
 import { ReservationAPI } from '@/reservation/external-api'
 import { StayRepository } from '@/reservation/persist'
 
@@ -39,6 +46,8 @@ export class ConversationService {
     private readonly config: ConfigService,
     @Inject(CONVERSATION_NOTIFIER)
     private readonly notifier: ConversationNotifier,
+    @Inject(CONVERSATION_LOCK)
+    private readonly lock: ConversationLock,
   ) {
     this.bookingBaseUrl = this.config.get('bookingBaseUrl')
   }
@@ -54,8 +63,22 @@ export class ConversationService {
       return ok(undefined)
     }
 
-    await this.stateRepo.markProcessed(message.messageId)
+    const acquired = await this.lock.acquire(message.phone, message.stayId)
+    if ('reason' in acquired) {
+      if (acquired.reason === LockFailureReason.CONTENDED) {
+        return err(DomainError.MESSAGE_BUSY())
+      }
+      return await this.runCriticalSection(message)
+    }
 
+    try {
+      return await this.runCriticalSection(message)
+    } finally {
+      await acquired.release()
+    }
+  }
+
+  private async runCriticalSection(message: ResolvedMessage): Promise<Result<void, DomainError>> {
     const state =
       await this.stateRepo.find(message.phone, message.stayId) ??
       this.flow.initialState(message.phone, message.stayId)
@@ -71,10 +94,11 @@ export class ConversationService {
 
     if (result.ready) {
       await this.handleReady(message, result.nextState)
-      return ok(undefined)
+    } else {
+      await this.notifier.reply(message.phone, message.stayId, result.response, message.messageId)
     }
 
-    await this.notifier.reply(message.phone, message.stayId, result.response, message.messageId)
+    await this.stateRepo.markProcessed(message.messageId)
     return ok(undefined)
   }
 
@@ -125,11 +149,8 @@ export class ConversationService {
 
     const { token, expiresAt } = linkResult.value
     this.logger.log(`Link generated — token: ${token}, notifying ${message.phone}`)
-    try {
-      await this.notifier.reply(message.phone, message.stayId, this.buildLinkMessage(token, expiresAt), message.messageId)
-    } catch (error) {
-      this.logger.error('notifier.reply failed', error)
-    }
+    
+    await this.notifier.reply(message.phone, message.stayId, this.buildLinkMessage(token, expiresAt), message.messageId)
     await this.stateRepo.save({ ...state, step: 'LINK_SENT' })
   }
 

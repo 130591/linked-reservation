@@ -9,7 +9,7 @@ export class SyncConversationNotifier implements ConversationNotifier {
   constructor(private readonly notificationService: NotificationService) { }
 
   async reply(phone: string, stayId: string, message: string, messageId?: string): Promise<void> {
-    await this.notificationService.dispatch({
+    return await this.notificationService.dispatch({
       type: DomainEvents.CONVERSATION_REPLY,
       recipients: [{
         id: phone,

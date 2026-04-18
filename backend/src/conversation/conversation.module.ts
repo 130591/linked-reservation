@@ -8,8 +8,9 @@ import { ConversationService } from './core/service'
 import { ConversationFlowService } from './core/service'
 import { IntentExtractorService } from './core/service'
 import { ConversationStateRepository } from './persist'
+import { RedisConversationLock } from './infra'
 import { StayRepository } from '@/reservation/persist/repositories/stay.repository'
-import { CONVERSATION_NOTIFIER } from './core/contract'
+import { CONVERSATION_NOTIFIER, CONVERSATION_LOCK } from './core/contract'
 import { SqsEventBus } from '@/common/messaging/sqs-event-bus'
 import { EVENT_BUS } from '@/common/messaging/event-bus.interface'
 
@@ -30,6 +31,7 @@ import { EVENT_BUS } from '@/common/messaging/event-bus.interface'
     SyncConversationNotifier,
     AsyncConversationNotifier,
     SqsEventBus,
+    RedisConversationLock,
     {
       provide: EVENT_BUS,
       useClass: SqsEventBus
@@ -37,6 +39,10 @@ import { EVENT_BUS } from '@/common/messaging/event-bus.interface'
     {
       provide: CONVERSATION_NOTIFIER,
       useClass: SyncConversationNotifier
+    },
+    {
+      provide: CONVERSATION_LOCK,
+      useClass: RedisConversationLock
     }
   ]
 })
