@@ -8,7 +8,7 @@ Webhooks do Twilio podem entregar mensagens do mesmo usuário em paralelo quando
 
 ## Decisão
 
-Usar lock distribuído no Redis (via Redlock simplificado com single-node, dado que já usamos ElastiCache single-primary) com chave composta `lock:conversation:{phone}:{stayId}`. O lock tem TTL de 30 segundos (timeout máximo esperado do ciclo completo: receber → processar → responder). Mensagens que não conseguem adquirir o lock entram em retry com backoff exponencial (3 tentativas, base 500ms).
+Usar lock distribuído no Redis (via Redlock simplificado com single-node, dado que já usamos ElastiCache single-primary) com chave composta `lock:conversation:{stayId}:{phone}`. O lock tem TTL de 30 segundos (timeout máximo esperado do ciclo completo: receber → processar → responder). Mensagens que não conseguem adquirir o lock entram em retry com backoff exponencial (3 tentativas, base 500ms).
 
 ## Tradeoffs considerados
 
