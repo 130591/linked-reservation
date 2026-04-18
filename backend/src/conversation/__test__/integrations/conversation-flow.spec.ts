@@ -6,7 +6,13 @@ import { ConversationFlowService } from '../../core/service/conversation-flow.se
 import { ConversationStateRepository } from '../../../conversation/persist'
 import { ReservationAPI } from '@/reservation/external-api'
 import { StayRepository, StayEntity } from '@/reservation/persist'
-import { CONVERSATION_NOTIFIER, ConversationNotifier, ConversationState } from '../../core/contract'
+import {
+  CONVERSATION_NOTIFIER,
+  CONVERSATION_LOCK,
+  ConversationNotifier,
+  ConversationLock,
+  ConversationState,
+} from '../../core/contract'
 import { NotificationChannel } from '@/notification/core/channels/channel.interface'
 import { NOTIFICATION_CHANNELS } from '@/notification/core/channels/channel.interface'
 import { ok } from 'neverthrow'
@@ -18,6 +24,8 @@ describe('Scenario: Full WhatsApp Reservation Flow', () => {
   let reservationAPI: jest.Mocked<ReservationAPI>
   let stayRepo: jest.Mocked<StayRepository>
   let notifier: jest.Mocked<ConversationNotifier>
+  let lock: jest.Mocked<ConversationLock>
+  let releaseMock: jest.Mock
 
   const PHONE = '+5511999990000'
   const STAY_ID = 'stay-123'
@@ -38,6 +46,10 @@ describe('Scenario: Full WhatsApp Reservation Flow', () => {
     } as any
     stayRepo = { findOneById: jest.fn() } as any
     notifier = { reply: jest.fn().mockResolvedValue(undefined) } as any
+    releaseMock = jest.fn().mockResolvedValue(undefined)
+    lock = {
+      acquire: jest.fn().mockResolvedValue({ release: releaseMock }),
+    } as any
     
     // Mock do WhatsAppChannel
     const mockWhatsAppChannel: NotificationChannel = {
@@ -55,6 +67,7 @@ describe('Scenario: Full WhatsApp Reservation Flow', () => {
         { provide: StayRepository, useValue: stayRepo },
         { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue('http://localhost:3000/booking') } },
         { provide: CONVERSATION_NOTIFIER, useValue: notifier },
+        { provide: CONVERSATION_LOCK, useValue: lock },
         { provide: NOTIFICATION_CHANNELS, useValue: [mockWhatsAppChannel] },
       ],
     }).compile()
@@ -209,6 +222,81 @@ describe('Scenario: Full WhatsApp Reservation Flow', () => {
 
       // Invariant: the message must not be marked as processed,
       // otherwise a retry after the stay is configured would be silently dropped.
+      expect(stateRepo.markProcessed).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Given concurrent messages for the same conversation', () => {
+    it('When the lock is contended after retries, Then MESSAGE_BUSY is returned and no state is mutated', async () => {
+      stateRepo.find.mockResolvedValue(null)
+      lock.acquire.mockResolvedValue({
+        reason: 'CONTENDED' as any,
+        attempts: 3,
+        waitMs: 1500,
+      })
+
+      const result = await service.handle(makeMessage('Oi'))
+
+      expect(result.isErr()).toBe(true)
+      expect(result._unsafeUnwrapErr()).toEqual(expect.objectContaining({
+        code: 'MESSAGE_BUSY',
+      }))
+      expect(stateRepo.markProcessed).not.toHaveBeenCalled()
+      expect(intentExtractor.extract).not.toHaveBeenCalled()
+      expect(releaseMock).not.toHaveBeenCalled()
+    })
+
+    it('When Redis is unavailable, Then the service fails-open and still processes the message', async () => {
+      stateRepo.find.mockResolvedValue(null)
+      lock.acquire.mockResolvedValue({
+        reason: 'UNAVAILABLE' as any,
+        attempts: 1,
+        waitMs: 5,
+      })
+      intentExtractor.extract.mockResolvedValue({
+        intent: 'GREETING',
+        confidence: 0.9,
+        entities: {},
+      })
+
+      const result = await service.handle(makeMessage('Oi'))
+
+      expect(result.isOk()).toBe(true)
+      expect(stateRepo.markProcessed).toHaveBeenCalledTimes(1)
+      expect(notifier.reply).toHaveBeenCalledTimes(1)
+      // No handle was returned, so there's nothing to release.
+      expect(releaseMock).not.toHaveBeenCalled()
+    })
+
+    it('When the lock is acquired, Then it is released after the handler completes', async () => {
+      stateRepo.find.mockResolvedValue(null)
+      intentExtractor.extract.mockResolvedValue({
+        intent: 'GREETING',
+        confidence: 0.9,
+        entities: {},
+      })
+
+      await service.handle(makeMessage('Oi'))
+
+      expect(lock.acquire).toHaveBeenCalledWith(PHONE, STAY_ID)
+      expect(releaseMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('When the handler throws, Then the lock is still released', async () => {
+      stateRepo.find.mockResolvedValue(null)
+      intentExtractor.extract.mockRejectedValue(new Error('boom'))
+
+      await expect(service.handle(makeMessage('Oi'))).rejects.toThrow('boom')
+      expect(releaseMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('When a duplicate messageId arrives, Then the lock is not acquired', async () => {
+      stateRepo.isProcessed.mockResolvedValue(true)
+
+      const result = await service.handle(makeMessage('Oi'))
+
+      expect(result.isOk()).toBe(true)
+      expect(lock.acquire).not.toHaveBeenCalled()
       expect(stateRepo.markProcessed).not.toHaveBeenCalled()
     })
   })
