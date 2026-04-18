@@ -4,6 +4,7 @@ import { ConfigModule } from '@/common/config'
 import { SqsClientModule } from '@/common/messaging/sqs.module'
 import { TwilioModule } from '@/common/integrations/twilio/twilio.module'
 import { RedisCacheModule } from '@/common/redis/redis.module'
+import { HealthModule } from '@/common/health'
 import { NotificationModule } from './notification/notification.module'
 import { ConversationModule } from './conversation/conversation.module'
 import { IdentityModule } from './identity/identity.module'
@@ -15,6 +16,7 @@ import { IdentityModule } from './identity/identity.module'
     SqsClientModule,
     TwilioModule,
     RedisCacheModule,
+    HealthModule,
     ...(process.env.NODE_ENV !== 'test'
       ? [
         NotificationModule,

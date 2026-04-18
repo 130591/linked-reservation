@@ -1,6 +1,7 @@
 import { Module, Global } from '@nestjs/common'
 import { RedisModule as IoRedisModule } from '@nestjs-modules/ioredis'
 import { ConfigService } from '@/common/config'
+import { RedisLifecycleService } from './redis-lifecycle.service'
 
 @Global()
 @Module({
@@ -12,11 +13,11 @@ import { ConfigService } from '@/common/config'
         options: {
           host: 'localhost',
           port: 6379,
-          // Adicione outras configurações conforme necessário
         },
       }),
     }),
   ],
+  providers: [RedisLifecycleService],
   exports: [IoRedisModule],
 })
 export class RedisCacheModule {}
