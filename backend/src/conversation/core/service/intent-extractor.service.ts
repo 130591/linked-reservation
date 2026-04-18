@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { ConfigService } from '@/common/config'
 import { ConversationState } from '../contract/conversation-state'
 import { ExtractedIntent, IntentType } from '../contract/intent'
-import { getBookingIntentPrompt } from '../prompts/booking-intent.prompt'
+import { getBookingIntentPrompt } from '../prompts'
 
 interface LLMResponse {
   intent: IntentType
@@ -36,14 +36,17 @@ export class IntentExtractorService {
     const prompt = getBookingIntentPrompt(message, state, today)
 
     try {
-      const response = await this.client.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300,
-        messages: [
-          { role: 'user', content: prompt },
-          { role: 'assistant', content: '{' }
-        ]
-      })
+      const response = await this.client.messages.create(
+        {
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 300,
+          messages: [
+            { role: 'user', content: prompt },
+            { role: 'assistant', content: '{' },
+          ],
+        },
+        { signal: AbortSignal.timeout(8_000) },
+      )
 
       const raw = response.content
         .filter(b => b.type === 'text')
@@ -63,9 +66,11 @@ export class IntentExtractorService {
         }
       }
     } catch (error) {
-      this.logger.error('LLM extraction failed', error)
-
-      // Fallback seguro — não quebra o fluxo
+      if (error instanceof Error && error.name === 'AbortError') {
+        this.logger.warn({ event: 'llm.timeout', model: 'claude-haiku-4-5-20251001' })
+      } else {
+        this.logger.error('LLM extraction failed', error)
+      }
       return { intent: 'UNKNOWN', confidence: 0, entities: {} }
     }
   }
