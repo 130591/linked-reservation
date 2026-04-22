@@ -1,4 +1,4 @@
-import { DataSource } from 'typeorm'
+import { DataSource, In } from 'typeorm'
 import { InjectDataSource } from '@nestjs/typeorm'
 import { Injectable } from '@nestjs/common'
 import { DefaultTypeOrmRepository } from '@/common/database'
@@ -28,6 +28,14 @@ export class IdentityStaffMemberRepository extends DefaultTypeOrmRepository<Iden
 
   async findAdminByPropertyId(propertyId: string): Promise<IdentityStaffMemberEntity | null> {
     return this.findOne({ where: { propertyId, role: 'property_admin' } as any })
+  }
+
+  async findAdminsByPropertyIds(propertyIds: string[]): Promise<Map<string, IdentityStaffMemberEntity>> {
+    if (propertyIds.length === 0) return new Map()
+    const rows = await this.find({
+      where: { propertyId: In(propertyIds), role: 'property_admin' } as any,
+    })
+    return new Map(rows.map(r => [r.propertyId, r]))
   }
 
   async upsertByAuth0Sub(data: UpsertStaffMemberData): Promise<IdentityStaffMemberEntity> {

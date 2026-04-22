@@ -1,6 +1,6 @@
 import { err, ok, Result } from 'neverthrow'
 import { DomainError } from '@/common/exceptions'
-import { PropertyEntity, PropertyStatus, PropertyType } from '@/identity/persist/entities'
+import { PropertyStatus, PropertyType } from '@/identity/persist/entities'
 
 const VALID_TYPES:    PropertyType[]   = ['hotel', 'pousada', 'hostel', 'other']
 const VALID_STATUSES: PropertyStatus[] = ['trial', 'active', 'suspended']

@@ -1,4 +1,4 @@
-import { DataSource, LessThan } from 'typeorm'
+import { DataSource, In, LessThan } from 'typeorm'
 import { InjectDataSource } from '@nestjs/typeorm'
 import { Injectable } from '@nestjs/common'
 import { DefaultTypeOrmRepository } from '@/common/database'
@@ -21,6 +21,11 @@ export class PropertyRepository extends DefaultTypeOrmRepository<PropertyEntity>
         trialExpiresAt: LessThan(before),
       },
     })
+  }
+
+  async suspendManyByIds(ids: number[]): Promise<void> {
+    if (ids.length === 0) return
+    await this.update({ id: In(ids) } as any, { status: 'suspended' })
   }
 
   protected toDomain(entity: PropertyEntity): Property {

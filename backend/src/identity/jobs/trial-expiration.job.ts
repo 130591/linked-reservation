@@ -27,33 +27,41 @@ export class TrialExpirationJob {
       this.propertyRepo.findTrialPropertiesExpiring(warnUntil),
     ])
 
-    await Promise.all(expired.map(p => this.suspendProperty(p)))
+    await this.suspendProperties(expired)
 
     const expiredIds = new Set(expired.map(p => p.id))
     const toWarn     = expiringSoon.filter(p => !expiredIds.has(p.id))
 
-    await Promise.all(toWarn.map(p => this.warnProperty(p)))
+    await this.warnProperties(toWarn)
   }
 
-  private async suspendProperty(entity: PropertyEntity): Promise<void> {
-    entity.status = 'suspended'
-    await this.propertyRepo.save(entity)
-    this.logger.log(`Property ${entity.externalId} suspended: trial expired`)
+  private async suspendProperties(entities: PropertyEntity[]): Promise<void> {
+    if (entities.length === 0) return
+    await this.propertyRepo.suspendManyByIds(entities.map(e => e.id))
+    for (const entity of entities) {
+      this.logger.log(`Property ${entity.externalId} suspended: trial expired`)
+    }
   }
 
-  private async warnProperty(entity: PropertyEntity): Promise<void> {
-    const admin = await this.staffRepo.findAdminByPropertyId(entity.externalId)
-    if (!admin) return
+  private async warnProperties(entities: PropertyEntity[]): Promise<void> {
+    if (entities.length === 0) return
 
-    await this.eventBus.publish<PropertyTrialExpiringPayload>(
-      DomainEvents.PROPERTY_TRIAL_EXPIRING,
-      {
-        propertyId:     entity.externalId,
-        adminEmail:     admin.email,
-        trialExpiresAt: entity.trialExpiresAt!.toISOString(),
-      },
-    )
+    const admins = await this.staffRepo.findAdminsByPropertyIds(entities.map(e => e.externalId))
 
-    this.logger.log(`Property ${entity.externalId} trial warning sent to ${admin.email}`)
+    await Promise.all(entities.map(async entity => {
+      const admin = admins.get(entity.externalId)
+      if (!admin) return
+
+      await this.eventBus.publish<PropertyTrialExpiringPayload>(
+        DomainEvents.PROPERTY_TRIAL_EXPIRING,
+        {
+          propertyId:     entity.externalId,
+          adminEmail:     admin.email,
+          trialExpiresAt: entity.trialExpiresAt!.toISOString(),
+        },
+      )
+
+      this.logger.log(`Property ${entity.externalId} trial warning sent to ${admin.email}`)
+    }))
   }
 }
