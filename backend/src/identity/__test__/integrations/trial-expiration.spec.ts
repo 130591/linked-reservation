@@ -1,84 +1,102 @@
-import { Test, TestingModule } from '@nestjs/testing'
+import { DataSource } from 'typeorm'
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import { TrialExpirationJob } from '@/identity/jobs/trial-expiration.job'
 import { PropertyRepository } from '@/identity/persist/repositories/property.repository'
 import { IdentityStaffMemberRepository } from '@/identity/persist/repositories/identity-staff-member.repository'
 import { PropertyEntity } from '@/identity/persist/entities/property'
 import { IdentityStaffMemberEntity } from '@/identity/persist/entities/identity-staff-member'
-import { EVENT_BUS } from '@/common/messaging'
 import { DomainEvents } from '@/common/events'
 import { FakeEventBus } from '@/reservation/__test__/fixture/events'
 
 jest.mock('typeorm-transactional', () => ({
-  Transactional: () => (target: any, key: any, descriptor: any) => descriptor,
+  Transactional: () => (_t: any, _k: any, descriptor: any) => descriptor,
   initializeTransactionalContext: jest.fn(),
 }))
 
-describe('Scenario: Trial expiration job runs at midnight', () => {
-  let job: TrialExpirationJob
-  let propertyRepo: jest.Mocked<PropertyRepository>
-  let staffRepo: jest.Mocked<IdentityStaffMemberRepository>
-  let eventBus: FakeEventBus
+const CONTAINER_STARTUP_TIMEOUT_MS = 120_000
 
-  const adminStaff = new IdentityStaffMemberEntity({
-    externalId: 'staff-uuid',
-    auth0Sub: 'auth0|admin',
-    email: 'admin@pousada.com',
-    name: 'João Admin',
-    role: 'property_admin',
-    propertyId: 'property-uuid',
-    active: true,
+describe('Scenario: Trial expiration job runs at midnight', () => {
+  let container: StartedPostgreSqlContainer
+  let dataSource: DataSource
+  let propertyRepo: PropertyRepository
+  let staffRepo: IdentityStaffMemberRepository
+  let eventBus: FakeEventBus
+  let job: TrialExpirationJob
+
+  beforeAll(async () => {
+    container = await new PostgreSqlContainer('postgres:16-alpine').start()
+
+    dataSource = new DataSource({
+      type: 'postgres',
+      host: container.getHost(),
+      port: container.getMappedPort(5432),
+      username: container.getUsername(),
+      password: container.getPassword(),
+      database: container.getDatabase(),
+      entities: [PropertyEntity, IdentityStaffMemberEntity],
+      synchronize: false,
+    })
+
+    await dataSource.initialize()
+    await dataSource.query('CREATE SCHEMA IF NOT EXISTS identity')
+    await dataSource.synchronize()
+
+    propertyRepo = new PropertyRepository(dataSource)
+    staffRepo    = new IdentityStaffMemberRepository(dataSource)
+  }, CONTAINER_STARTUP_TIMEOUT_MS)
+
+  afterAll(async () => {
+    await dataSource?.destroy()
+    await container?.stop()
   })
 
   beforeEach(async () => {
+    await dataSource.query('TRUNCATE "identity"."properties", "identity"."identity_staff_members" RESTART IDENTITY CASCADE')
     eventBus = new FakeEventBus()
-
-    propertyRepo = {
-      findTrialPropertiesExpiring: jest.fn(),
-      save: jest.fn(),
-      update: jest.fn(),
-    } as any
-
-    staffRepo = {
-      findAdminByPropertyId: jest.fn().mockResolvedValue(adminStaff),
-    } as any
-
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        TrialExpirationJob,
-        { provide: PropertyRepository, useValue: propertyRepo },
-        { provide: IdentityStaffMemberRepository, useValue: staffRepo },
-        { provide: EVENT_BUS, useValue: eventBus },
-      ],
-    }).compile()
-
-    job = module.get(TrialExpirationJob)
+    job = new TrialExpirationJob(propertyRepo, staffRepo, eventBus)
   })
 
-  describe('Given properties with trialExpiresAt in the past', () => {
-    const expiredEntity = new PropertyEntity({
-      externalId: 'property-uuid',
-      name: 'Pousada Expirada',
-      type: 'pousada',
+  const seedProperty = (overrides: Partial<PropertyEntity>): Promise<PropertyEntity> =>
+    propertyRepo.save(new PropertyEntity({
+      name:   'Pousada',
+      type:   'pousada',
       status: 'trial',
-      trialExpiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    })
+      ...overrides,
+    }))
 
-    beforeEach(() => {
-      propertyRepo.save.mockResolvedValue(expiredEntity)
-      propertyRepo.findTrialPropertiesExpiring
-        .mockResolvedValueOnce([expiredEntity])  // expired now
-        .mockResolvedValueOnce([expiredEntity])  // expiring in 2 days (includes expired)
-    })
+  const seedAdmin = (propertyExternalId: string, email: string): Promise<IdentityStaffMemberEntity> =>
+    staffRepo.save(new IdentityStaffMemberEntity({
+      auth0Sub:   `auth0|${email}`,
+      email,
+      name:       'Admin',
+      role:       'property_admin',
+      propertyId: propertyExternalId,
+      active:     true,
+    }))
 
+  const findById = async (id: string): Promise<PropertyEntity | null> =>
+    propertyRepo.findOneById(id)
+
+  describe('Given properties with trialExpiresAt in the past', () => {
     it('When the job runs, then the property status is updated to suspended', async () => {
+      const expired = await seedProperty({
+        name:           'Pousada Expirada',
+        trialExpiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      })
+
       await job.run()
 
-      expect(propertyRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ externalId: 'property-uuid', status: 'suspended' }),
-      )
+      const after = await findById(expired.externalId)
+      expect(after?.status).toBe('suspended')
     })
 
     it('And the property.trial.expiring event is NOT published for already-expired properties', async () => {
+      const expired = await seedProperty({
+        name:           'Pousada Expirada',
+        trialExpiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      })
+      await seedAdmin(expired.externalId, 'admin@pousada.com')
+
       await job.run()
 
       const event = eventBus.published.find(e => e.queue === DomainEvents.PROPERTY_TRIAL_EXPIRING)
@@ -87,62 +105,50 @@ describe('Scenario: Trial expiration job runs at midnight', () => {
   })
 
   describe('Given properties expiring within 2 days (but not yet expired)', () => {
-    const soonEntity = new PropertyEntity({
-      externalId: 'property-soon-uuid',
-      name: 'Pousada Quase Expirando',
-      type: 'hostel',
-      status: 'trial',
-      trialExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    })
-
-    beforeEach(() => {
-      staffRepo.findAdminByPropertyId.mockResolvedValue(
-        new IdentityStaffMemberEntity({
-          externalId: 'staff-soon-uuid',
-          auth0Sub: 'auth0|admin-soon',
-          email: 'admin@hostel.com',
-          name: 'Ana Admin',
-          role: 'property_admin',
-          propertyId: 'property-soon-uuid',
-          active: true,
-        }),
-      )
-
-      propertyRepo.findTrialPropertiesExpiring
-        .mockResolvedValueOnce([])            // none expired yet
-        .mockResolvedValueOnce([soonEntity])  // expiring within 2 days
-    })
-
     it('When the job runs, then the property.trial.expiring event is published with propertyId and adminEmail', async () => {
+      const soon = await seedProperty({
+        name:           'Pousada Quase Expirando',
+        type:           'hostel',
+        trialExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      })
+      await seedAdmin(soon.externalId, 'admin@hostel.com')
+
       await job.run()
 
       const event = eventBus.published.find(e => e.queue === DomainEvents.PROPERTY_TRIAL_EXPIRING)
       expect(event).toBeDefined()
       expect(event?.payload).toEqual(
         expect.objectContaining({
-          propertyId: 'property-soon-uuid',
+          propertyId: soon.externalId,
           adminEmail: 'admin@hostel.com',
         }),
       )
     })
 
     it('And the property status is NOT updated to suspended', async () => {
+      const soon = await seedProperty({
+        trialExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      })
+      await seedAdmin(soon.externalId, 'admin@hostel.com')
+
       await job.run()
 
-      expect(propertyRepo.update).not.toHaveBeenCalled()
+      const after = await findById(soon.externalId)
+      expect(after?.status).toBe('trial')
     })
   })
 
   describe('Given no expiring properties', () => {
-    beforeEach(() => {
-      propertyRepo.findTrialPropertiesExpiring.mockResolvedValue([])
-    })
+    it('When the job runs, then no events are published and no property is suspended', async () => {
+      const future = await seedProperty({
+        trialExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      })
 
-    it('When the job runs, then no DB writes occur and no events are published', async () => {
       await job.run()
 
-      expect(propertyRepo.save).not.toHaveBeenCalled()
       expect(eventBus.published).toHaveLength(0)
+      const after = await findById(future.externalId)
+      expect(after?.status).toBe('trial')
     })
   })
 })
