@@ -1,4 +1,4 @@
-import { IsDate, IsNumber, IsString, IsUUID } from 'class-validator'
+import { IsDate, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator'
 
 export class GenerateLinkCommand {
   @IsUUID()
@@ -7,8 +7,9 @@ export class GenerateLinkCommand {
   @IsString()
   stayName: string
 
+  @IsOptional()
   @IsString()
-  customerName: string
+  customerName?: string
 
   @IsDate()
   checkIn: Date
