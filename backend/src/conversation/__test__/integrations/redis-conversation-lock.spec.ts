@@ -1,7 +1,7 @@
 
 import { LockFixture, makeLockFixture, sleep, waitForCalls } from '../fixture/lock'
 import { LockHandle, LockFailure, LockFailureReason } from '@/conversation/core/contract'
-import { RedisConversationLock } from '../../infra/redis-conversation-lock'
+import { RedisConversationLock } from '../../infra/lock/redis-conversation-lock'
 
 describe('RedisConversationLock — concurrency (integration)', () => {
   let fixture: LockFixture
