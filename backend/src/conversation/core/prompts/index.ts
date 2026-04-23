@@ -1,1 +1,1 @@
-export * from './booking-intent.prompt'
+export * from './build-system.prompt'
