@@ -5,8 +5,8 @@ import { ConversationController } from './http/controller/conversation.controlle
 import { SyncConversationNotifier } from '@/notification/external-api'
 import { AsyncConversationNotifier } from '@/notification/external-api'
 import { ConversationService } from './core/service'
-import { ConversationFlowService } from './core/service'
-import { IntentExtractorService } from './core/service'
+import { ConversationAgentService } from './core/service'
+import { LlmExtractorService } from './core/service'
 import { ConversationStateRepository } from './persist'
 import { RedisConversationLock } from './infra'
 import { StayRepository } from '@/reservation/persist/repositories/stay.repository'
@@ -24,8 +24,8 @@ import { EVENT_BUS } from '@/common/messaging/event-bus.interface'
   ],
   providers: [
     ConversationService,
-    ConversationFlowService,
-    IntentExtractorService,
+    ConversationAgentService,
+    LlmExtractorService,
     ConversationStateRepository,
     StayRepository,
     SyncConversationNotifier,
