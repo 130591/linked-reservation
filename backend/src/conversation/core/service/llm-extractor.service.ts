@@ -20,7 +20,7 @@ export class LlmExtractorService {
   
   async handle(state: ConversationState, messages: Anthropic.MessageParam[]) {
      try {
-        const today = new Date().toISOString().split('T')[0]
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
         const response = await this.client.messages.create(
           {
             model: 'claude-haiku-4-5-20251001',
