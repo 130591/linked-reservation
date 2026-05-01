@@ -4,7 +4,8 @@ import { err, ok, Result } from 'neverthrow'
 import { ConversationDomainErrors as DomainError } from '@/conversation/core/errors'
 import { ConversationState } from '../contract/conversation-state'
 import { LlmExtractorService } from './llm-extractor.service'
-import { MAX_GUESTS, MAX_HISTORY, MAX_MESSAGES } from '../limits'
+import { MAX_GUESTS, MAX_MESSAGES } from '../limits'
+import { formatISODate, isBeforeISODate, isSameOrBeforeISODate, parseISODate } from '../dates-validator'
 
 interface ConfirmBookingInput {
   checkIn?: string
@@ -25,7 +26,6 @@ export type ConversationAgentError = ReturnType<
   | typeof DomainError.BOOKING_FIELDS_INVALID
 >
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 const HOTEL_TZ = 'America/Sao_Paulo'
 
 @Injectable()
@@ -53,18 +53,18 @@ export class ConversationAgentService {
       return err(DomainError.MESSAGE_LIMIT_EXCEEDED(state.messageCount, MAX_MESSAGES))
     }
 
-    const messages = this.buildMessages(state.messageHistory, userMessage)
+    const messages = this.llmExtractor.appendUserBlock(state.messageHistory, { type: 'text', text: userMessage })
     const responseResult = await this.llmExtractor.handle(state, messages)
 
     if (responseResult.isErr()) return err(responseResult.error)
 
     const response = responseResult.value
-    const toolUse  = this.extractToolUse(response)
+    const toolUse  = this.llmExtractor.extractToolUse(response)
 
     const updatedState: ConversationState = {
       ...state,
       messageCount: state.messageCount + 1,
-      messageHistory: this.appendToHistory(state.messageHistory, userMessage, response),
+      messageHistory: this.llmExtractor.appendToHistory(state.messageHistory, userMessage, response),
       updatedAt: new Date().toISOString(),
     }
 
@@ -79,27 +79,8 @@ export class ConversationAgentService {
     return ok({
       kind: 'reply',
       nextState: updatedState,
-      response: this.extractText(response),
+      response: this.llmExtractor.extractText(response),
     })
-  }
-
-  private buildMessages(
-    history: Anthropic.MessageParam[],
-    userMessage: string,
-  ): Anthropic.MessageParam[] {
-    return appendUserBlock(history, { type: 'text', text: userMessage })
-  }
-
-  private extractText(response: Anthropic.Message): string {
-    return response.content
-      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-      .map(b => b.text)
-      .join('')
-  }
-
-  private extractToolUse(response: Anthropic.Message): Anthropic.ToolUseBlock | undefined {
-    return response.content
-      .find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === 'confirm_booking')
   }
 
   private handleConfirmBooking(
@@ -123,7 +104,7 @@ export class ConversationAgentService {
         checkOut:     this.preserveValid(input.checkOut, state.checkOut, invalid.includes('checkOut')),
         guests:       invalid.includes('guests') ? state.guests : (input.guests ?? state.guests),
         customerName: input.customerName ?? state.customerName,
-        messageHistory: appendUserBlock(state.messageHistory, {
+        messageHistory: this.llmExtractor.appendUserBlock(state.messageHistory, {
           type: 'tool_result',
           tool_use_id: toolUseId,
           is_error: true,
@@ -164,16 +145,18 @@ export class ConversationAgentService {
 
   private findInvalid(input: ConfirmBookingInput): string[] {
     const invalid = new Set<string>()
-    const today = todayInTz(HOTEL_TZ)
+    const today = formatISODate(new Date(), HOTEL_TZ)
 
-    const ciOk = !!input.checkIn  && ISO_DATE.test(input.checkIn)
-    const coOk = !!input.checkOut && ISO_DATE.test(input.checkOut)
+    const checkInOk  = !!input.checkIn  && parseISODate(input.checkIn)  !== null
+    const checkOutOk = !!input.checkOut && parseISODate(input.checkOut) !== null
 
-    if (input.checkIn  && !ciOk) invalid.add('checkIn')
-    if (input.checkOut && !coOk) invalid.add('checkOut')
+    if (input.checkIn  && !checkInOk)  invalid.add('checkIn')
+    if (input.checkOut && !checkOutOk) invalid.add('checkOut')
 
-    if (ciOk && input.checkIn! < today) invalid.add('checkIn')
-    if (ciOk && coOk && input.checkOut! <= input.checkIn!) invalid.add('checkOut')
+    if (checkInOk && isBeforeISODate(input.checkIn!, today)) invalid.add('checkIn')
+    if (checkInOk && checkOutOk && isSameOrBeforeISODate(input.checkOut!, input.checkIn!)) {
+      invalid.add('checkOut')
+    }
 
     if (input.guests !== undefined && (input.guests < 1 || input.guests > MAX_GUESTS)) {
       invalid.add('guests')
@@ -190,59 +173,4 @@ export class ConversationAgentService {
     if (incomingInvalid) return existing
     return incoming ?? existing
   }
-
-  private appendToHistory(
-    history: Anthropic.MessageParam[],
-    userMessage: string,
-    assistantResponse: Anthropic.Message,
-  ): Anthropic.MessageParam[] {
-    const withUser = appendUserBlock(history, { type: 'text', text: userMessage })
-    const updated: Anthropic.MessageParam[] = [
-      ...withUser,
-      { role: 'assistant', content: assistantResponse.content },
-    ]
-
-    if (updated.length > MAX_HISTORY) {
-      const excess = updated.length - MAX_HISTORY
-      return updated.slice(excess % 2 === 0 ? excess : excess + 1)
-    }
-
-    return updated
-  }
-}
-
-type UserContentBlock =
-  | { type: 'text'; text: string }
-  | { type: 'tool_result'; tool_use_id: string; is_error?: boolean; content: string }
-
-// Anthropic requires strict user/assistant alternation. When the trailing
-// turn is already `user`, merge the block into it instead of starting a new
-// one — otherwise the next API call gets two consecutive `user` turns and
-// fails.
-function appendUserBlock(
-  history: Anthropic.MessageParam[],
-  block: UserContentBlock,
-): Anthropic.MessageParam[] {
-  const last = history[history.length - 1]
-  if (last && last.role === 'user') {
-    const existing = Array.isArray(last.content)
-      ? last.content
-      : [{ type: 'text' as const, text: last.content }]
-    return [
-      ...history.slice(0, -1),
-      { role: 'user', content: [...existing, block] as Anthropic.MessageParam['content'] },
-    ]
-  }
-  return [
-    ...history,
-    {
-      role: 'user',
-      content: block.type === 'text' ? block.text : ([block] as Anthropic.MessageParam['content']),
-    },
-  ]
-}
-
-// `en-CA` formats as YYYY-MM-DD, which sorts lexicographically.
-function todayInTz(tz: string): string {
-  return new Date().toLocaleDateString('en-CA', { timeZone: tz })
 }

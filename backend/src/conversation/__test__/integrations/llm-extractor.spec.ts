@@ -3,6 +3,7 @@ import type Anthropic from '@anthropic-ai/sdk'
 import { LlmExtractorService } from '../../core/service/llm-extractor.service'
 import { ConfigService } from '@/common/config'
 import { CONFIRM_BOOKING_TOOL } from '../../infra'
+import type { ConversationMessage } from '../../core/contract'
 import { makeState } from '../fixture/agent'
 
 const createMock = jest.fn()
@@ -17,7 +18,9 @@ jest.mock('@anthropic-ai/sdk', () => ({
 describe('Scenario: LLM Extractor', () => {
   let service: LlmExtractorService
 
-  const messages: Anthropic.MessageParam[] = [{ role: 'user', content: 'Oi' }]
+  const messages: ConversationMessage[] = [
+    { role: 'user', content: [{ type: 'text', text: 'Oi' }] },
+  ]
 
   beforeEach(async () => {
     createMock.mockReset()

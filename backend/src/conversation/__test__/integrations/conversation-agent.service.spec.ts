@@ -1,10 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { ok } from 'neverthrow'
-import type Anthropic from '@anthropic-ai/sdk'
 
 import { ConversationAgentService } from '../../core/service/conversation-agent.service'
 import { LlmExtractorService } from '../../core/service/llm-extractor.service'
-import type { ConversationState } from '../../core/contract'
+import type { ConversationMessage, ConversationState } from '../../core/contract'
 import {
   DEFAULT_PHONE,
   DEFAULT_STAY_ID,
@@ -30,7 +29,13 @@ describe('ConversationAgentService', () => {
   })
 
   beforeEach(async () => {
-    llm = { handle: jest.fn() } as unknown as jest.Mocked<LlmExtractorService>
+    const real = Object.create(LlmExtractorService.prototype) as LlmExtractorService
+    llm = {
+      handle:          jest.fn(),
+      appendUserBlock: real.appendUserBlock.bind(real),
+      appendToHistory: real.appendToHistory.bind(real),
+      extractToolUse:  real.extractToolUse.bind(real),
+    } as unknown as jest.Mocked<LlmExtractorService>
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -70,23 +75,26 @@ describe('ConversationAgentService', () => {
 
         const history = next.messageHistory
         expect(history).toEqual(expect.arrayContaining([
-          expect.objectContaining({ role: 'user', content: 'meu check-in é dia 10/10' }),
+          expect.objectContaining({
+            role:    'user',
+            content: expect.arrayContaining([
+              expect.objectContaining({ type: 'text', text: 'meu check-in é dia 10/10' }),
+            ]),
+          }),
         ]))
 
         const assistantTurn = history.find(
-          (m: Anthropic.MessageParam) =>
+          m =>
             m.role === 'assistant'
-            && Array.isArray(m.content)
-            && m.content.some((b: any) => b.type === 'tool_use' && b.id === toolUseId),
+            && m.content.some(b => b.type === 'tool_use' && b.id === toolUseId),
         )
         expect(assistantTurn).toBeDefined()
 
         const toolResultTurn = history.find(
-          (m: Anthropic.MessageParam) =>
+          m =>
             m.role === 'user'
-            && Array.isArray(m.content)
             && m.content.some(
-              (b: any) =>
+              b =>
                 b.type === 'tool_result'
                 && b.tool_use_id === toolUseId
                 && b.is_error === true,
@@ -114,12 +122,11 @@ describe('ConversationAgentService', () => {
         expect(llm.handle).toHaveBeenCalledTimes(2)
         const [, messagesArg] = llm.handle.mock.calls[1]
 
-        const hasToolResult = (messagesArg as Anthropic.MessageParam[]).some(
+        const hasToolResult = (messagesArg as ConversationMessage[]).some(
           m =>
             m.role === 'user'
-            && Array.isArray(m.content)
             && m.content.some(
-              (b: any) =>
+              b =>
                 b.type === 'tool_result'
                 && b.tool_use_id === toolUseId,
             ),
@@ -175,9 +182,9 @@ describe('ConversationAgentService', () => {
   // synthetic tool_result is a `user` turn, the next inbound guest message
   // must merge into that same turn instead of starting a new one.
   describe('Strict user/assistant alternation across turns', () => {
-    const isUserOrAssistant = (m: Anthropic.MessageParam) => m.role === 'user' || m.role === 'assistant'
+    const isUserOrAssistant = (m: ConversationMessage) => m.role === 'user' || m.role === 'assistant'
 
-    const assertAlternation = (history: Anthropic.MessageParam[]) => {
+    const assertAlternation = (history: ConversationMessage[]) => {
       for (let i = 0; i < history.length - 1; i++) {
         expect(isUserOrAssistant(history[i])).toBe(true)
         expect(history[i].role).not.toBe(history[i + 1].role)
@@ -201,14 +208,12 @@ describe('ConversationAgentService', () => {
         llm.handle.mockResolvedValueOnce(ok(makeLlmTextResponse('certo, e o check-out?')))
         await agent.process('saio dia 15', stateAfterIncomplete)
 
-        const [, sentMessages] = llm.handle.mock.calls[1] as [unknown, Anthropic.MessageParam[]]
+        const [, sentMessages] = llm.handle.mock.calls[1] as [unknown, ConversationMessage[]]
         assertAlternation(sentMessages)
 
         const lastUser = sentMessages[sentMessages.length - 1]
         expect(lastUser.role).toBe('user')
-        expect(Array.isArray(lastUser.content)).toBe(true)
-        const blocks = lastUser.content as any[]
-        expect(blocks).toEqual(expect.arrayContaining([
+        expect(lastUser.content).toEqual(expect.arrayContaining([
           expect.objectContaining({ type: 'tool_result', tool_use_id: toolUseId }),
           expect.objectContaining({ type: 'text', text: 'saio dia 15' }),
         ]))
@@ -249,14 +254,12 @@ describe('ConversationAgentService', () => {
         const idx = history.findIndex(
           m =>
             m.role === 'assistant'
-            && Array.isArray(m.content)
-            && (m.content as any[]).some(b => b.type === 'tool_use' && b.id === toolUseId),
+            && m.content.some(b => b.type === 'tool_use' && b.id === toolUseId),
         )
         expect(idx).toBeGreaterThanOrEqual(0)
         expect(idx + 1).toBeLessThan(history.length)
         expect(history[idx + 1].role).toBe('user')
-        expect(Array.isArray(history[idx + 1].content)).toBe(true)
-        expect(history[idx + 1].content as any[]).toEqual(
+        expect(history[idx + 1].content).toEqual(
           expect.arrayContaining([expect.objectContaining({
             type: 'tool_result',
             tool_use_id: toolUseId,
@@ -267,9 +270,12 @@ describe('ConversationAgentService', () => {
 
     describe('Given the history slides past MAX_HISTORY entries', () => {
       it('When a new turn is appended, Then trimming preserves alternation starting with user', async () => {
-        const history: Anthropic.MessageParam[] = []
+        const history: ConversationMessage[] = []
         for (let i = 0; i < 20; i++) {
-          history.push({ role: i % 2 === 0 ? 'user' : 'assistant', content: `m${i}` })
+          history.push({
+            role:    i % 2 === 0 ? 'user' : 'assistant',
+            content: [{ type: 'text', text: `m${i}` }],
+          })
         }
 
         llm.handle.mockResolvedValueOnce(ok(makeLlmTextResponse('resp')))

@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import type Anthropic from '@anthropic-ai/sdk'
 
 import { LlmExtractorService } from '../../core/service/llm-extractor.service'
 import { ConfigService } from '@/common/config'
+import type { ConversationMessage } from '../../core/contract'
 import { makeState } from '../fixture/agent'
 
 const createMock = jest.fn()
@@ -17,7 +17,9 @@ jest.mock('@anthropic-ai/sdk', () => ({
 describe('LlmExtractorService', () => {
   let service: LlmExtractorService
 
-  const messages: Anthropic.MessageParam[] = [{ role: 'user', content: 'Oi' }]
+  const messages: ConversationMessage[] = [
+    { role: 'user', content: [{ type: 'text', text: 'Oi' }] },
+  ]
 
   beforeEach(async () => {
     createMock.mockReset()

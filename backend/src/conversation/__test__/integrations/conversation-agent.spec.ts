@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { ok, err } from 'neverthrow'
-import type Anthropic from '@anthropic-ai/sdk'
 import { ConversationAgentService } from '../../core/service/conversation-agent.service'
 import { LlmExtractorService } from '../../core/service/llm-extractor.service'
 import { ConversationDomainErrors as DomainError } from '../../core/errors'
+import type { ConversationMessage } from '../../core/contract'
 import {
   DEFAULT_PHONE,
   DEFAULT_STAY_ID,
@@ -18,7 +18,16 @@ describe('Scenario: Conversation Agent Turn', () => {
   let llm: jest.Mocked<LlmExtractorService>
 
   beforeEach(async () => {
-    llm = { handle: jest.fn() } as any
+    // Build a stub that mocks `handle` (the only side-effecting call) and
+    // delegates the pure helpers to the real prototype, avoiding the SDK
+    // client construction in the constructor.
+    const real = Object.create(LlmExtractorService.prototype) as LlmExtractorService
+    llm = {
+      handle:          jest.fn(),
+      appendUserBlock: real.appendUserBlock.bind(real),
+      appendToHistory: real.appendToHistory.bind(real),
+      extractToolUse:  real.extractToolUse.bind(real),
+    } as unknown as jest.Mocked<LlmExtractorService>
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -58,7 +67,10 @@ describe('Scenario: Conversation Agent Turn', () => {
       expect(outcome.response).toBe('Olá! Quando gostaria de se hospedar?')
       expect(outcome.nextState.messageCount).toBe(1)
       expect(outcome.nextState.messageHistory).toHaveLength(2)
-      expect(outcome.nextState.messageHistory[0]).toEqual({ role: 'user', content: 'Oi' })
+      expect(outcome.nextState.messageHistory[0]).toEqual({
+        role: 'user',
+        content: [{ type: 'text', text: 'Oi' }],
+      })
       expect(outcome.nextState.messageHistory[1].role).toBe('assistant')
     })
 
@@ -179,9 +191,12 @@ describe('Scenario: Conversation Agent Turn', () => {
     it('When appending would exceed MAX_HISTORY (20), Then the oldest pair is trimmed keeping turn alignment', async () => {
       llm.handle.mockResolvedValue(ok(textReply('resposta')))
 
-      const history: Anthropic.MessageParam[] = []
+      const history: ConversationMessage[] = []
       for (let i = 0; i < 20; i++) {
-        history.push({ role: i % 2 === 0 ? 'user' : 'assistant', content: `m${i}` })
+        history.push({
+          role:    i % 2 === 0 ? 'user' : 'assistant',
+          content: [{ type: 'text', text: `m${i}` }],
+        })
       }
 
       const result = await agent.process('nova', makeState({ messageHistory: history, messageCount: 5 }))
