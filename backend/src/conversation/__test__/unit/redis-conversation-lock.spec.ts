@@ -1,4 +1,4 @@
-import { RedisConversationLock } from '../../infra/lock/redis-conversation-lock'
+import { RedisConversationLock } from '../../libs/lock/redis-conversation-lock'
 import { LockFailureReason } from '../../core/contract'
 
 describe('RedisConversationLock', () => {

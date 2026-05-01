@@ -3,11 +3,13 @@ import { ok } from 'neverthrow'
 
 import { ConversationAgentService } from '../../core/service/conversation-agent.service'
 import { LlmExtractorService } from '../../core/service/llm-extractor.service'
+import { ConfigService } from '@/common/config'
 import type { ConversationMessage, ConversationState } from '../../core/contract'
 import {
   DEFAULT_PHONE,
   DEFAULT_STAY_ID,
   makeState,
+  makeConfigMock,
   makeLlmToolUseResponse,
   makeLlmTextResponse,
 } from '../fixture/agent'
@@ -29,18 +31,22 @@ describe('ConversationAgentService', () => {
   })
 
   beforeEach(async () => {
+    const configMock = makeConfigMock()
     const real = Object.create(LlmExtractorService.prototype) as LlmExtractorService
+    ;(real as any).config = configMock
     llm = {
       handle:          jest.fn(),
       appendUserBlock: real.appendUserBlock.bind(real),
       appendToHistory: real.appendToHistory.bind(real),
       extractToolUse:  real.extractToolUse.bind(real),
+      extractText:     real.extractText.bind(real),
     } as unknown as jest.Mocked<LlmExtractorService>
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ConversationAgentService,
         { provide: LlmExtractorService, useValue: llm },
+        { provide: ConfigService,        useValue: configMock },
       ],
     }).compile()
 

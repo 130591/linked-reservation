@@ -2,6 +2,23 @@ import type Anthropic from '@anthropic-ai/sdk'
 import { ConversationState } from '../../core/contract'
 import type { InboundWhatsAppMessage } from '../../core/service/conversation.service'
 
+export const DEFAULT_CONVERSATION_CONFIG = {
+  maxMessages: 8,
+  maxHistory:  20,
+  maxGuests:   20,
+}
+
+export function makeConfigMock(overrides: Partial<typeof DEFAULT_CONVERSATION_CONFIG> = {}) {
+  const cfg = { ...DEFAULT_CONVERSATION_CONFIG, ...overrides }
+  const values: Record<string, unknown> = {
+    'anthropicApiKey':          'fake-api-key',
+    'conversation.maxMessages': cfg.maxMessages,
+    'conversation.maxHistory':  cfg.maxHistory,
+    'conversation.maxGuests':   cfg.maxGuests,
+  }
+  return { get: jest.fn().mockImplementation((key: string) => values[key]) }
+}
+
 export const DEFAULT_PHONE       = '+5511999990000'
 export const DEFAULT_STAY_ID     = 'stay-123'
 export const DEFAULT_DATE_ISO    = '2026-04-22T10:00:00.000Z'

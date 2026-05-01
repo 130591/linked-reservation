@@ -7,11 +7,10 @@ import {
   ConversationMessage, 
   ConversationState 
 } from '@/conversation/core/contract'
-import { CONFIRM_BOOKING_TOOL } from '@/conversation/infra'
+import { CONFIRM_BOOKING_TOOL } from '@/conversation/libs'
 import { buildSystemPrompt } from '../prompts'
 import { ConversationDomainErrors as DomainError } from '../errors'
-import { MAX_HISTORY } from '../limits'
-import { formatISODate } from '../dates-validator'
+import { formatISODate } from '../../libs/dates-validator'
 
 type UserContentBlock =
   | { type: 'text'; text: string }
@@ -32,11 +31,12 @@ export class LlmExtractorService {
   async handle(state: ConversationState, messages: ConversationMessage[]) {
      try {
         const today = formatISODate(new Date(), 'America/Sao_Paulo')
+        const maxMessages = this.config.get('conversation.maxMessages')
         const response = await this.client.messages.create(
           {
             model: 'claude-haiku-4-5-20251001',
             max_tokens: 1024,
-            system: buildSystemPrompt(state, today),
+            system: buildSystemPrompt(state, today, maxMessages),
             tools: [CONFIRM_BOOKING_TOOL],
             messages: messages as Anthropic.MessageParam[],
           },
@@ -87,9 +87,10 @@ export class LlmExtractorService {
       { role: 'assistant', content: assistantResponse.content as ConversationContentBlock[] },
     ]
 
-    if (updated.length <= MAX_HISTORY) return updated
+    const maxHistory = this.config.get('conversation.maxHistory')
+    if (updated.length <= maxHistory) return updated
 
-    const trimmed = updated.slice(-MAX_HISTORY)
+    const trimmed = updated.slice(-maxHistory)
     return trimmed[0].role === 'assistant' ? trimmed.slice(1) : trimmed
   }
 

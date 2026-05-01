@@ -2,9 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing'
 import type Anthropic from '@anthropic-ai/sdk'
 import { LlmExtractorService } from '../../core/service/llm-extractor.service'
 import { ConfigService } from '@/common/config'
-import { CONFIRM_BOOKING_TOOL } from '../../infra'
+import { CONFIRM_BOOKING_TOOL } from '../../libs'
 import type { ConversationMessage } from '../../core/contract'
-import { makeState } from '../fixture/agent'
+import { makeState, makeConfigMock } from '../fixture/agent'
 
 const createMock = jest.fn()
 
@@ -28,10 +28,7 @@ describe('Scenario: LLM Extractor', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LlmExtractorService,
-        {
-          provide: ConfigService,
-          useValue: { get: jest.fn().mockReturnValue('fake-api-key') },
-        },
+        { provide: ConfigService, useValue: makeConfigMock() },
       ],
     }).compile()
 

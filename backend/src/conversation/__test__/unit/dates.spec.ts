@@ -3,7 +3,7 @@ import {
   isBeforeISODate,
   isSameOrBeforeISODate,
   parseISODate,
-} from '../../core/dates-validator'
+} from '../../libs/dates-validator'
 
 describe('formatISODate', () => {
   describe('Given a UTC instant inside the same day in São Paulo (UTC-3)', () => {

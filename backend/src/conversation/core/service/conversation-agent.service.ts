@@ -4,8 +4,8 @@ import { err, ok, Result } from 'neverthrow'
 import { ConversationDomainErrors as DomainError } from '@/conversation/core/errors'
 import { ConversationState } from '../contract/conversation-state'
 import { LlmExtractorService } from './llm-extractor.service'
-import { MAX_GUESTS, MAX_MESSAGES } from '../limits'
-import { formatISODate, isBeforeISODate, isSameOrBeforeISODate, parseISODate } from '../dates-validator'
+import { ConfigService } from '@/common/config'
+import { formatISODate, isBeforeISODate, isSameOrBeforeISODate, parseISODate } from '../../libs/dates-validator'
 
 interface ConfirmBookingInput {
   checkIn?: string
@@ -32,7 +32,10 @@ const HOTEL_TZ = 'America/Sao_Paulo'
 export class ConversationAgentService {
   private readonly logger = new Logger(ConversationAgentService.name)
 
-  constructor(private readonly llmExtractor: LlmExtractorService) {}
+  constructor(
+    private readonly llmExtractor: LlmExtractorService,
+    private readonly config: ConfigService,
+  ) {}
 
   initialState(phone: string, stayId: string): ConversationState {
     return {
@@ -49,8 +52,9 @@ export class ConversationAgentService {
     userMessage: string,
     state: ConversationState,
   ): Promise<Result<AgentOutcome, ConversationAgentError>> {
-    if (state.messageCount >= MAX_MESSAGES) {
-      return err(DomainError.MESSAGE_LIMIT_EXCEEDED(state.messageCount, MAX_MESSAGES))
+    const maxMessages = this.config.get('conversation.maxMessages')
+    if (state.messageCount >= maxMessages) {
+      return err(DomainError.MESSAGE_LIMIT_EXCEEDED(state.messageCount, maxMessages))
     }
 
     const messages = this.llmExtractor.appendUserBlock(state.messageHistory, { type: 'text', text: userMessage })
@@ -158,7 +162,8 @@ export class ConversationAgentService {
       invalid.add('checkOut')
     }
 
-    if (input.guests !== undefined && (input.guests < 1 || input.guests > MAX_GUESTS)) {
+    const maxGuests = this.config.get('conversation.maxGuests')
+    if (input.guests !== undefined && (input.guests < 1 || input.guests > maxGuests)) {
       invalid.add('guests')
     }
 

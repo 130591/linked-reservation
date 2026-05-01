@@ -1,7 +1,6 @@
 import { ConversationState } from '../contract/conversation-state'
-import { MAX_MESSAGES } from '../limits'
 
-export const buildSystemPrompt = (state: ConversationState, today: string): string => {
+export const buildSystemPrompt = (state: ConversationState, today: string, maxMessages: number): string => {
   const collected: string[] = []
   if (state.checkIn)      collected.push(`check-in: ${state.checkIn}`)
   if (state.checkOut)     collected.push(`check-out: ${state.checkOut}`)
@@ -20,7 +19,7 @@ export const buildSystemPrompt = (state: ConversationState, today: string): stri
     ? `AINDA PRECISA COLETAR: ${missing.join(' e ')}.`
     : 'Todos os dados obrigatórios foram coletados — chame confirm_booking agora.'
 
-  const remaining = Math.max(0, MAX_MESSAGES - state.messageCount)
+  const remaining = Math.max(0, maxMessages - state.messageCount)
   const budgetSection = buildBudgetSection(remaining)
 
   return `Você é um assistente de reservas via WhatsApp. Hoje é ${today}.

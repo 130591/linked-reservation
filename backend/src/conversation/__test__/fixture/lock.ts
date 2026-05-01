@@ -1,5 +1,5 @@
 import Redis from 'ioredis'
-import { RedisConversationLock } from '../../infra/lock/redis-conversation-lock'
+import { RedisConversationLock } from '../../libs/lock/redis-conversation-lock'
 
 const REDIS_URL = process.env.REDIS_TEST_URL ?? 'redis://localhost:6379'
 
