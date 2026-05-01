@@ -70,11 +70,16 @@ export class ConversationService {
       if (acquired.reason === LockFailureReason.CONTENDED) {
         return err(DomainError.MESSAGE_BUSY())
       }
-      await this.runCriticalSection(message)
-      return ok(undefined)
+      // Fail-closed: running without a lock would race concurrent deliveries.
+      return err(DomainError.LOCK_UNAVAILABLE())
     }
 
     try {
+      // Re-check inside the lock: a concurrent worker may have marked the
+      // message as processed while we were waiting on acquire().
+      if (await this.stateRepo.isProcessed(message.messageId)) {
+        return ok(undefined)
+      }
       await this.runCriticalSection(message)
       return ok(undefined)
     } finally {
@@ -148,10 +153,25 @@ export class ConversationService {
       case 'CONFIRM_BOOKING_INCOMPLETE': {
         this.logger.warn({ event: 'conversation.confirm_incomplete', missing: error.missing })
 
+        await this.stateRepo.save(error.nextState)
         await this.notifier.reply(
           message.phone,
           message.stayId,
           `Faltam algumas informações (${error.missing.join(', ')}). Pode me confirmar?`,
+          message.messageId,
+        )
+        await this.stateRepo.markProcessed(message.messageId)
+        return
+      }
+
+      case 'BOOKING_FIELDS_INVALID': {
+        this.logger.warn({ event: 'conversation.booking_invalid', invalid: error.invalid })
+
+        await this.stateRepo.save(error.nextState)
+        await this.notifier.reply(
+          message.phone,
+          message.stayId,
+          `Não consegui interpretar essas informações (${error.invalid.join(', ')}). Pode confirmar de novo?`,
           message.messageId,
         )
         await this.stateRepo.markProcessed(message.messageId)
@@ -192,7 +212,7 @@ export class ConversationService {
       guests:       state.guests!,
       staffId:      botStaffId,
       stayName:     stay?.name ?? 'Hotel',
-      customerName: state.customerName!,
+      customerName: state.customerName ?? '',
     })
 
     if (linkResult.isErr()) {
