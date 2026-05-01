@@ -1,9 +1,12 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { ConversationState } from '../../core/contract'
+import type { InboundWhatsAppMessage } from '../../core/service/conversation.service'
 
-export const DEFAULT_PHONE    = '+5511999990000'
-export const DEFAULT_STAY_ID  = 'stay-123'
-export const DEFAULT_DATE_ISO = '2026-04-22T10:00:00.000Z'
+export const DEFAULT_PHONE       = '+5511999990000'
+export const DEFAULT_STAY_ID     = 'stay-123'
+export const DEFAULT_DATE_ISO    = '2026-04-22T10:00:00.000Z'
+export const DEFAULT_MESSAGE_ID  = 'SM_TEST_0001'
+export const DEFAULT_WHATSAPP_TO = 'whatsapp:+5511888880000'
 
 export function makeState(overrides: Partial<ConversationState> = {}): ConversationState {
   return {
@@ -13,6 +16,18 @@ export function makeState(overrides: Partial<ConversationState> = {}): Conversat
     messageCount:   0,
     messageHistory: [],
     updatedAt:      DEFAULT_DATE_ISO,
+    ...overrides,
+  }
+}
+
+export function makeInboundMessage(
+  overrides: Partial<InboundWhatsAppMessage> = {},
+): InboundWhatsAppMessage {
+  return {
+    messageId: DEFAULT_MESSAGE_ID,
+    from:      `whatsapp:${DEFAULT_PHONE}`,
+    to:        DEFAULT_WHATSAPP_TO,
+    body:      'oi',
     ...overrides,
   }
 }
@@ -29,6 +44,8 @@ export function textReply(text: string): Anthropic.Message {
     content:       [{ type: 'text', text, citations: [] }],
   } as unknown as Anthropic.Message
 }
+
+export const makeLlmTextResponse = textReply
 
 export function multiTextReply(...parts: string[]): Anthropic.Message {
   return {
@@ -48,4 +65,14 @@ export function toolUseResponse(input: Record<string, unknown>): Anthropic.Messa
     usage:         { input_tokens: 10, output_tokens: 20 },
     content:       [{ type: 'tool_use', id: 'toolu_1', name: 'confirm_booking', input }],
   } as unknown as Anthropic.Message
+}
+
+export function makeLlmToolUseResponse(
+  { input, id = 'toolu_1' }: { input: Record<string, unknown>; id?: string },
+): Anthropic.Message {
+  const base = toolUseResponse(input) as any
+  return {
+    ...base,
+    content: [{ type: 'tool_use', id, name: 'confirm_booking', input }],
+  } as Anthropic.Message
 }
