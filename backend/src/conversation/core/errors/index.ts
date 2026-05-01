@@ -1,3 +1,4 @@
+import type { ConversationState } from '../contract/conversation-state'
 
 export interface MessageLimitExceededError {
   readonly code: 'MESSAGE_LIMIT_EXCEEDED'
@@ -10,6 +11,14 @@ export interface ConfirmBookingIncompleteError {
   readonly code: 'CONFIRM_BOOKING_INCOMPLETE'
   readonly message: string
   readonly missing: ReadonlyArray<'checkIn' | 'checkOut' | 'guests'>
+  readonly nextState: ConversationState
+}
+
+export interface BookingFieldsInvalidError {
+  readonly code: 'BOOKING_FIELDS_INVALID'
+  readonly message: string
+  readonly invalid: ReadonlyArray<string>
+  readonly nextState: ConversationState
 }
 
 export const ConversationDomainErrors = {
@@ -32,9 +41,21 @@ export const ConversationDomainErrors = {
 
   CONFIRM_BOOKING_INCOMPLETE: (
     missing: ReadonlyArray<'checkIn' | 'checkOut' | 'guests'>,
+    nextState: ConversationState,
   ): ConfirmBookingIncompleteError => ({
     code: 'CONFIRM_BOOKING_INCOMPLETE',
     missing,
+    nextState,
     message: `Confirm booking called with missing fields: ${missing.join(', ')}`,
+  }),
+
+  BOOKING_FIELDS_INVALID: (
+    invalid: ReadonlyArray<string>,
+    nextState: ConversationState,
+  ): BookingFieldsInvalidError => ({
+    code: 'BOOKING_FIELDS_INVALID',
+    invalid,
+    nextState,
+    message: `Confirm booking called with invalid fields: ${invalid.join(', ')}`,
   }),
 } as const
