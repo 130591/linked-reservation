@@ -22,6 +22,7 @@ export type DomainErrorCode =
   | 'ROOM_NOT_FOUND'
   | 'CHANNEL_NOT_CONFIGURED'
   | 'MESSAGE_BUSY'
+  | 'LOCK_UNAVAILABLE'
 
 export interface BaseDomainError {
   readonly code: DomainErrorCode
@@ -161,5 +162,10 @@ export const DomainError = {
   MESSAGE_BUSY: (): DomainError => ({
     code: 'MESSAGE_BUSY',
     message: 'Another message for this conversation is being processed; retry later',
+  }),
+
+  LOCK_UNAVAILABLE: (): DomainError => ({
+    code: 'LOCK_UNAVAILABLE',
+    message: 'Conversation lock backend is unavailable; refusing to process without a lock',
   }),
 } as const

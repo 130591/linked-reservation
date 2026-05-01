@@ -3,7 +3,7 @@ import { Logger, ValidationPipe } from '@nestjs/common'
 import { initializeTransactionalContext } from 'typeorm-transactional'
 
 import { AppModule } from '@/app.module'
-import { AllExceptionsFilter, ResultInterceptor } from '@/common/framework'
+import { AllExceptionsFilter, DomainErrorFilter, ResultInterceptor } from '@/common/framework'
 
 // Must be < ALB deregistration_delay (30s) to finish in-flight work before
 // the target is considered drained. See ADR 0004.
@@ -14,7 +14,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule)
 
   const httpAdapterHost = app.get(HttpAdapterHost)
-  app.useGlobalFilters(new AllExceptionsFilter(httpAdapterHost))
+  app.useGlobalFilters(
+    new AllExceptionsFilter(httpAdapterHost),
+    new DomainErrorFilter(),
+  )
   app.useGlobalPipes(new ValidationPipe({ transform: true }))
   app.useGlobalInterceptors(new ResultInterceptor())
 
