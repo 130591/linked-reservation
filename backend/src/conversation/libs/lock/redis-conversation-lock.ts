@@ -7,7 +7,7 @@ import {
   LockHandle,
   LockFailure,
   LockFailureReason,
-} from '../core/contract'
+} from '../../core/contract'
 
 // Compare-and-delete: avoids releasing a lock a slow handler lost to TTL.
 const RELEASE_LUA = `

@@ -33,6 +33,12 @@ export const sharedConfigSchema = z.object({
     password: z.string(),
     database: z.string(),
   }),
+
+  conversation: z.object({
+    maxMessages: z.coerce.number().int().positive().default(8),
+    maxHistory:  z.coerce.number().int().positive().default(20),
+    maxGuests:   z.coerce.number().int().positive().default(20),
+  }),
 })
 
 export type Environment = z.infer<typeof environmentSchema>
@@ -67,6 +73,12 @@ export const sharedConfigFactory = (): SharedConfig => {
       username: process.env.DATABASE_USERNAME,
       password: process.env.DATABASE_PASSWORD,
       database: process.env.DATABASE_NAME,
+    },
+
+    conversation: {
+      maxMessages: process.env.CONVERSATION_MAX_MESSAGES,
+      maxHistory:  process.env.CONVERSATION_MAX_HISTORY,
+      maxGuests:   process.env.CONVERSATION_MAX_GUESTS,
     },
   })
 

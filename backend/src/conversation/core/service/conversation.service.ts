@@ -3,8 +3,6 @@ import { err, ok, Result } from 'neverthrow'
 import { ConfigService } from '@/common/config/service/config.service'
 import { DomainError } from '@/common/exceptions/domain-error'
 import { ConversationStateRepository } from '@/conversation/persist'
-import { IntentExtractorService } from './intent-extractor.service'
-import { ConversationFlowService } from './conversation-flow.service'
 import {
   CONVERSATION_NOTIFIER,
   CONVERSATION_LOCK,
@@ -15,6 +13,11 @@ import {
 } from '../contract'
 import { ReservationAPI } from '@/reservation/external-api'
 import { StayRepository } from '@/reservation/persist'
+import { 
+  AgentOutcome, 
+  ConversationAgentError, 
+  ConversationAgentService 
+} from './conversation-agent.service'
 
 export interface InboundWhatsAppMessage {
   messageId: string
@@ -39,8 +42,7 @@ export class ConversationService {
 
   constructor(
     private readonly stateRepo: ConversationStateRepository,
-    private readonly intentExtractor: IntentExtractorService,
-    private readonly flow: ConversationFlowService,
+    private readonly agent: ConversationAgentService,
     private readonly reservationAPI: ReservationAPI,
     private readonly stayRepo: StayRepository,
     private readonly config: ConfigService,
@@ -68,38 +70,114 @@ export class ConversationService {
       if (acquired.reason === LockFailureReason.CONTENDED) {
         return err(DomainError.MESSAGE_BUSY())
       }
-      return await this.runCriticalSection(message)
+      // Fail-closed: running without a lock would race concurrent deliveries.
+      return err(DomainError.LOCK_UNAVAILABLE())
     }
 
     try {
-      return await this.runCriticalSection(message)
+      // Re-check inside the lock: a concurrent worker may have marked the
+      // message as processed while we were waiting on acquire().
+      if (await this.stateRepo.isProcessed(message.messageId)) {
+        return ok(undefined)
+      }
+      await this.runCriticalSection(message)
+      return ok(undefined)
     } finally {
       await acquired.release()
     }
   }
 
-  private async runCriticalSection(message: ResolvedMessage): Promise<Result<void, DomainError>> {
+  private async runCriticalSection(message: ResolvedMessage): Promise<void> {
     const state =
-      await this.stateRepo.find(message.phone, message.stayId) ??
-      this.flow.initialState(message.phone, message.stayId)
+      (await this.stateRepo.find(message.phone, message.stayId)) ??
+      this.agent.initialState(message.phone, message.stayId)
 
-    if (BLOCKED_STEPS.has(state.step)) return ok(undefined)
+    if (BLOCKED_STEPS.has(state.step)) return
 
-    const intent = await this.intentExtractor.extract(message.body, state)
+    const agentResult = await this.agent.process(message.body, state)
 
-    this.logger.log({ phone: message.phone, step: state.step, intent: intent.intent, confidence: intent.confidence })
+    if (agentResult.isErr()) {
+      return this.handleAgentError(agentResult.error, state, message)
+    }
 
-    const result = this.flow.advance(state, intent)
-    await this.stateRepo.save(result.nextState)
+    return this.handleAgentOutcome(agentResult.value, message)
+  }
 
-    if (result.ready) {
-      await this.handleReady(message, result.nextState)
+  private async handleAgentOutcome(
+    outcome: AgentOutcome,
+    message: ResolvedMessage,
+  ): Promise<void> {
+    await this.stateRepo.save(outcome.nextState)
+
+    if (outcome.kind === 'booking') {
+      await this.handleReady(message, outcome.nextState)
     } else {
-      await this.notifier.reply(message.phone, message.stayId, result.response, message.messageId)
+      await this.notifier.reply(
+        message.phone,
+        message.stayId,
+        outcome.response,
+        message.messageId,
+      )
     }
 
     await this.stateRepo.markProcessed(message.messageId)
-    return ok(undefined)
+  }
+
+  private async handleAgentError(
+    error: ConversationAgentError,
+    state: ConversationState,
+    message: ResolvedMessage,
+  ): Promise<void> {
+    switch (error.code) {
+      case 'MESSAGE_LIMIT_EXCEEDED':
+      case 'LLM_TIMEOUT':
+      case 'LLM_CALL_FAILED': {
+        this.logger.warn({ event: 'conversation.handoff', reason: error.code, error })
+
+        const handoffState: ConversationState = {
+          ...state,
+          step: 'REQUIRES_HUMAN',
+          updatedAt: new Date().toISOString(),
+        }
+        await this.stateRepo.save(handoffState)
+        await this.notifier.reply(
+          message.phone,
+          message.stayId,
+          'Vou chamar um atendente para te ajudar melhor. Um momento! 👋',
+          message.messageId,
+        )
+        await this.stateRepo.markProcessed(message.messageId)
+        return
+      }
+
+      case 'CONFIRM_BOOKING_INCOMPLETE': {
+        this.logger.warn({ event: 'conversation.confirm_incomplete', missing: error.missing })
+
+        await this.stateRepo.save(error.nextState)
+        await this.notifier.reply(
+          message.phone,
+          message.stayId,
+          `Faltam algumas informações (${error.missing.join(', ')}). Pode me confirmar?`,
+          message.messageId,
+        )
+        await this.stateRepo.markProcessed(message.messageId)
+        return
+      }
+
+      case 'BOOKING_FIELDS_INVALID': {
+        this.logger.warn({ event: 'conversation.booking_invalid', invalid: error.invalid })
+
+        await this.stateRepo.save(error.nextState)
+        await this.notifier.reply(
+          message.phone,
+          message.stayId,
+          `Não consegui interpretar essas informações (${error.invalid.join(', ')}). Pode confirmar de novo?`,
+          message.messageId,
+        )
+        await this.stateRepo.markProcessed(message.messageId)
+        return
+      }
+    }
   }
 
   private async enrich(inbound: InboundWhatsAppMessage): Promise<Result<ResolvedMessage, DomainError>> {
@@ -134,7 +212,7 @@ export class ConversationService {
       guests:       state.guests!,
       staffId:      botStaffId,
       stayName:     stay?.name ?? 'Hotel',
-      customerName: state.customerName!,
+      customerName: state.customerName ?? '',
     })
 
     if (linkResult.isErr()) {
@@ -143,7 +221,7 @@ export class ConversationService {
         `Não foi possível gerar o link: ${linkResult.error.message}\n\nTente informar outras datas.`,
         message.messageId,
       )
-      await this.stateRepo.save({ ...state, step: 'ASK_DATES', checkIn: undefined, checkOut: undefined, guests: undefined })
+      await this.stateRepo.save({ ...state, step: 'INIT', checkIn: undefined, checkOut: undefined, guests: undefined })
       return
     }
 

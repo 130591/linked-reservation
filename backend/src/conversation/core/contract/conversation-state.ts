@@ -1,11 +1,18 @@
 export type ConversationStep =
   | 'INIT'
-  | 'ASK_DATES'
-  | 'ASK_GUESTS'
-  | 'ASK_NAME'
   | 'READY'
   | 'LINK_SENT'
   | 'REQUIRES_HUMAN'
+
+export type ConversationContentBlock =
+  | { type: 'text';        text: string; citations?: unknown[] | null }
+  | { type: 'tool_use';    id: string; name: string; input: unknown }
+  | { type: 'tool_result'; tool_use_id: string; is_error?: boolean; content: string }
+
+export type ConversationMessage = {
+  role:    'user' | 'assistant'
+  content: ConversationContentBlock[]
+}
 
 export interface ConversationState {
   phone: string
@@ -15,6 +22,7 @@ export interface ConversationState {
   checkOut?: string
   guests?: number
   customerName?: string
+  messageHistory: ConversationMessage[]
   messageCount: number
   updatedAt: string
 }
