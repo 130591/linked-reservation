@@ -23,6 +23,12 @@ export type DomainErrorCode =
   | 'CHANNEL_NOT_CONFIGURED'
   | 'MESSAGE_BUSY'
   | 'LOCK_UNAVAILABLE'
+  | 'BOOKING_REFERENCE_COLLISION_EXHAUSTED'
+  | 'PAYMENT_PROVIDER_UNAVAILABLE'
+  | 'PAYMENT_DECLINED'
+  | 'PAYMENT_REQUIRES_ACTION'
+  | 'PAYMENT_INTENT_NOT_FOUND'
+  | 'RESERVATION_NOT_FOUND'
 
 export interface BaseDomainError {
   readonly code: DomainErrorCode
@@ -167,5 +173,35 @@ export const DomainError = {
   LOCK_UNAVAILABLE: (): DomainError => ({
     code: 'LOCK_UNAVAILABLE',
     message: 'Conversation lock backend is unavailable; refusing to process without a lock',
+  }),
+
+  BOOKING_REFERENCE_COLLISION_EXHAUSTED: (): DomainError => ({
+    code: 'BOOKING_REFERENCE_COLLISION_EXHAUSTED',
+    message: 'Failed to assign a unique booking reference after 3 attempts',
+  }),
+
+  PAYMENT_PROVIDER_UNAVAILABLE: (): DomainError => ({
+    code: 'PAYMENT_PROVIDER_UNAVAILABLE',
+    message: 'Payment provider is temporarily unavailable',
+  }),
+
+  PAYMENT_DECLINED: (): DomainError => ({
+    code: 'PAYMENT_DECLINED',
+    message: 'Payment was declined',
+  }),
+
+  PAYMENT_REQUIRES_ACTION: (): DomainError => ({
+    code: 'PAYMENT_REQUIRES_ACTION',
+    message: 'Payment requires additional authentication',
+  }),
+
+  PAYMENT_INTENT_NOT_FOUND: (): DomainError => ({
+    code: 'PAYMENT_INTENT_NOT_FOUND',
+    message: 'Payment intent not found',
+  }),
+
+  RESERVATION_NOT_FOUND: (): DomainError => ({
+    code: 'RESERVATION_NOT_FOUND',
+    message: 'Reservation not found',
   }),
 } as const

@@ -31,6 +31,21 @@ export class ReservationEntity extends DefaultEntity<ReservationEntity> {
   @Column({ name: 'deleted_at', type: 'timestamp', nullable: true })
   deletedAt: Date | null
 
+  @Column({ name: 'booking_reference', type: 'varchar', length: 32, nullable: true })
+  bookingReference: string | null
+
+  @Column({ name: 'payment_intent_id', type: 'uuid', nullable: true })
+  paymentIntentId: string | null
+
+  @Column({ name: 'guest_name', type: 'varchar', length: 200, nullable: true })
+  guestName: string | null
+
+  @Column({ name: 'guest_email', type: 'varchar', length: 320, nullable: true })
+  guestEmail: string | null
+
+  @Column({ name: 'guest_phone', type: 'varchar', length: 32, nullable: true })
+  guestPhone: string | null
+
   static fromDomain(reservation: Reservation): ReservationEntity {
     return new ReservationEntity({
       roomId: reservation.getRooms()[0].getId(),

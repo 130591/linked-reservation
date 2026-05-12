@@ -4,6 +4,7 @@ export class InitialSchema1775788347017 implements MigrationInterface {
     name = 'InitialSchema1775788347017'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS btree_gist`);
         await queryRunner.query(`CREATE SCHEMA IF NOT EXISTS identity`);
         await queryRunner.query(`CREATE SCHEMA IF NOT EXISTS reservation`);
         await queryRunner.query(`CREATE SCHEMA IF NOT EXISTS notification`);

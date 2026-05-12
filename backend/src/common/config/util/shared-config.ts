@@ -26,6 +26,10 @@ export const sharedConfigSchema = z.object({
   auth0ManagementClientSecret: z.string(),
   systemAdminKey: z.string(),
 
+  stripeSecretKey: z.string(),
+  stripePublishableKey: z.string(),
+  stripeWebhookSecret: z.string(),
+
   database: z.object({
     host: z.string(),
     port: z.number(),
@@ -67,6 +71,11 @@ export const sharedConfigFactory = (): SharedConfig => {
     auth0ManagementClientId: process.env.AUTH0_MANAGEMENT_CLIENT_ID,
     auth0ManagementClientSecret: process.env.AUTH0_MANAGEMENT_CLIENT_SECRET,
     systemAdminKey: process.env.SYSTEM_ADMIN_KEY,
+
+    stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+    stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+
     database: {
       host: process.env.DATABASE_HOST,
       port: process.env.DATABASE_PORT ? parseInt(process.env.DATABASE_PORT) : 5432,

@@ -29,6 +29,10 @@ export class ReservationRepository extends DefaultTypeOrmRepository<ReservationE
     })
   }
 
+  async findByPaymentIntentId(paymentIntentId: string): Promise<ReservationEntity | null> {
+    return this.findOne({ where: { paymentIntentId } as any })
+  }
+
   async cancelHold(reservationId: string): Promise<void> {
     await this.update(reservationId, {
       status: 'CANCELLED',

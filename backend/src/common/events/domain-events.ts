@@ -27,16 +27,18 @@ export interface SessionExpiredPayload {
 }
 
 export interface ReservationConfirmedPayload {
-  reservationId: string
-  stayId: string
-  roomId: string
-  checkIn: string
-  checkOut: string
-  guestName: string
-  guestPhone: string
-  guestsCount: number
-  stayName: string
-  bookingLink: string
+  reservationId:  string
+  stayId:         string
+  roomId:         string
+  checkIn:        string
+  checkOut:       string
+  guestName:      string
+  guestPhone:     string
+  guestsCount:    number
+  stayName:       string
+  bookingLink:    string
+  staffId?:       string | null
+  bookingReference?: string
 }
 
 export interface SessionLinkGeneratedPayload {
@@ -77,4 +79,14 @@ export interface PropertyTrialExpiringPayload {
   propertyId: string
   adminEmail: string
   trialExpiresAt: string
+}
+
+export interface PaymentIntentSucceededPayload {
+  providerIntentId: string
+  eventPayload:     object
+}
+
+export interface PaymentIntentFailedPayload {
+  providerIntentId: string
+  eventPayload:     object
 }

@@ -32,3 +32,7 @@ export function isSameOrBeforeISODate(a: string, b: string): boolean {
   const db = parseISODate(b)
   return !!da && !!db && (da.isSame(db, 'day') || da.isBefore(db, 'day'))
 }
+
+export function formatYYMM(date: Date): string {
+  return dayjs(date).format('YYMM')
+}

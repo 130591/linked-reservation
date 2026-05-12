@@ -10,6 +10,8 @@ import { ReservationSessionEntity } from '@/reservation/persist/entities/reserva
 import { NotificationEntity } from '@/notification/persist/entities/notification'
 import { RoutingRuleEntity } from '@/notification/persist/entities/routing-rule'
 import { OutboxEventEntity } from '@/common/messaging/outbox/outbox-event.entity'
+import { PaymentIntentEntity } from '@/payment/persist/entities/payment-intent.entity'
+import { WebhookEventEntity } from '@/payment/persist/entities/webhook-event.entity'
 
 export const dataSourceOptionsFactory = (
   configService: ConfigService,
@@ -33,5 +35,7 @@ export const dataSourceOptionsFactory = (
     NotificationEntity,
     RoutingRuleEntity,
     OutboxEventEntity,
+    PaymentIntentEntity,
+    WebhookEventEntity,
   ],
 })

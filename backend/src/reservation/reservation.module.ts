@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ReservationPersistenceModule } from './persist/persistence.module'
 import {
+  BookingReferenceService,
   ConfirmReservation,
   GenerateLink,
   ConfirmPayment,
@@ -19,6 +20,7 @@ import { EVENT_BUS } from '@/common/messaging/event-bus.interface'
   imports: [ReservationPersistenceModule],
   controllers: [BookingController, ReservationController],
   providers: [
+    BookingReferenceService,
     ConfirmReservation,
     GenerateLink,
     ConfirmPayment,
@@ -34,6 +36,7 @@ import { EVENT_BUS } from '@/common/messaging/event-bus.interface'
     }
   ],
   exports: [
+    BookingReferenceService,
     ReservationAPI
   ],
 })
