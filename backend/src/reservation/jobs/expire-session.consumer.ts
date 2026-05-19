@@ -39,7 +39,7 @@ export class ExpireSessionConsumer {
 
     // Release any active HOLD — room becomes available again
     await this.reservationRepo.update(
-      { sessionId, status: 'HOLD' as any, deletedAt: IsNull() as any },
+      { sessionId: session.id as any, status: 'HOLD' as any, deletedAt: IsNull() as any },
       { status: 'EXPIRED' }
     )
 

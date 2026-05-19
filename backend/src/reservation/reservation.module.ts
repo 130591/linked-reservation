@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { Module, forwardRef } from '@nestjs/common'
 import { ReservationPersistenceModule } from './persist/persistence.module'
 import {
   BookingReferenceService,
@@ -6,18 +6,20 @@ import {
   GenerateLink,
   ConfirmPayment,
   SelectRoom,
-  ReservationTokenService
+  ReservationTokenService,
 } from './core/service'
 import { BookingController } from './http/controller/booking'
 import { ReservationController } from './http/controller/reservation'
 import { ReservationTokenGuard } from '@/common/framework/guards/reservation-token.guard'
+import { ReservationViewTokenGuard } from '@/common/framework/guards/reservation-view-token.guard'
 import { GetAvailableRooms } from './core/service/get-available-rooms'
 import { ReservationAPI } from './external-api'
 import { SqsEventBus } from '@/common/messaging/sqs-event-bus'
 import { EVENT_BUS } from '@/common/messaging/event-bus.interface'
+import { PaymentModule } from '@/payment/payment.module'
 
 @Module({
-  imports: [ReservationPersistenceModule],
+  imports: [ReservationPersistenceModule, forwardRef(() => PaymentModule)],
   controllers: [BookingController, ReservationController],
   providers: [
     BookingReferenceService,
@@ -28,16 +30,20 @@ import { EVENT_BUS } from '@/common/messaging/event-bus.interface'
     GetAvailableRooms,
     ReservationTokenService,
     ReservationTokenGuard,
+    ReservationViewTokenGuard,
     ReservationAPI,
     SqsEventBus,
     {
       provide: EVENT_BUS,
-      useClass: SqsEventBus
-    }
+      useClass: SqsEventBus,
+    },
   ],
   exports: [
     BookingReferenceService,
-    ReservationAPI
+    ConfirmPayment,
+    ReservationAPI,
+    ReservationTokenService,
+    ReservationViewTokenGuard,
   ],
 })
-export class ReservationModule { }
+export class ReservationModule {}

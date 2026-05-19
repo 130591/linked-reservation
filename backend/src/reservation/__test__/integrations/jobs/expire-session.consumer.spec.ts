@@ -30,36 +30,37 @@ describe('Scenario: Expire a Reservation Session after timeout', () => {
   })
 
   describe('Given an ACTIVE session with a HOLD reservation', () => {
-    const sessionId = 'ses-001'
+    const sessionExternalId = 'ses-001'
+    const sessionNumericId = 1
     const staffId = 'staff-1'
 
     beforeEach(() => {
-      sessionRepo.seed(buildSession({ externalId: sessionId }))
-      reservationRepo.seed(buildReservation({ externalId: 'res-001', sessionId }))
+      sessionRepo.seed(buildSession({ externalId: sessionExternalId, id: sessionNumericId }))
+      reservationRepo.seed(buildReservation({ externalId: 'res-001', sessionId: sessionNumericId }))
     })
 
     it('When the expiration message arrives, then the session status must change to EXPIRED', async () => {
-      await consumer.handle(buildMessage({ sessionId, staffId }))
+      await consumer.handle(buildMessage({ sessionId: sessionExternalId, staffId }))
 
-      const session = sessionRepo.get(sessionId)!
+      const session = sessionRepo.get(sessionExternalId)!
       expect(session.status).toBe('EXPIRED')
     })
 
     it('And any HOLD reservation linked to this session must also be marked as EXPIRED', async () => {
-      await consumer.handle(buildMessage({ sessionId, staffId }))
+      await consumer.handle(buildMessage({ sessionId: sessionExternalId, staffId }))
 
       const reservations = reservationRepo.getAll()
       expect(reservations.every(r => r.status === 'EXPIRED')).toBe(true)
     })
 
     it('And a SessionExpiredEvent must be published to notify downstream consumers', async () => {
-      await consumer.handle(buildMessage({ sessionId, staffId }))
+      await consumer.handle(buildMessage({ sessionId: sessionExternalId, staffId }))
 
       expect(eventBus.published).toHaveLength(1)
       expect(eventBus.published[0]).toEqual({
         queue: EventQueues.SESSION_EXPIRED,
         payload: {
-          sessionId,
+          sessionId: sessionExternalId,
           staffId,
           stayName: 'Grand Hotel',
           checkIn: '2030-06-01T00:00:00.000Z',
@@ -73,30 +74,31 @@ describe('Scenario: Expire a Reservation Session after timeout', () => {
   })
 
   describe('Given a session that was already COMPLETED (payment confirmed before expiration)', () => {
-    const sessionId = 'ses-002'
+    const sessionExternalId = 'ses-002'
+    const sessionNumericId = 2
     const staffId = 'staff-1'
 
     beforeEach(() => {
-      sessionRepo.seed(buildSession({ externalId: sessionId, status: 'COMPLETED' }))
-      reservationRepo.seed(buildReservation({ externalId: 'res-002', sessionId, status: 'CONFIRMED' }))
+      sessionRepo.seed(buildSession({ externalId: sessionExternalId, id: sessionNumericId, status: 'COMPLETED' }))
+      reservationRepo.seed(buildReservation({ externalId: 'res-002', sessionId: sessionNumericId, status: 'CONFIRMED' }))
     })
 
     it('When the expiration message arrives, then the session must remain COMPLETED (no side-effects)', async () => {
-      await consumer.handle(buildMessage({ sessionId, staffId }))
+      await consumer.handle(buildMessage({ sessionId: sessionExternalId, staffId }))
 
-      const session = sessionRepo.get(sessionId)!
+      const session = sessionRepo.get(sessionExternalId)!
       expect(session.status).toBe('COMPLETED')
     })
 
     it('And the reservation must remain CONFIRMED', async () => {
-      await consumer.handle(buildMessage({ sessionId, staffId }))
+      await consumer.handle(buildMessage({ sessionId: sessionExternalId, staffId }))
 
       const reservations = reservationRepo.getAll()
       expect(reservations[0].status).toBe('CONFIRMED')
     })
 
     it('And no event must be emitted', async () => {
-      await consumer.handle(buildMessage({ sessionId, staffId }))
+      await consumer.handle(buildMessage({ sessionId: sessionExternalId, staffId }))
 
       expect(eventBus.published).toHaveLength(0)
     })
@@ -111,29 +113,30 @@ describe('Scenario: Expire a Reservation Session after timeout', () => {
   })
 
   describe('Given an ACTIVE session with multiple HOLD reservations (e.g. room was changed)', () => {
-    const sessionId = 'ses-003'
+    const sessionExternalId = 'ses-003'
+    const sessionNumericId = 3
     const staffId = 'staff-1'
 
     beforeEach(() => {
-      sessionRepo.seed(buildSession({ externalId: sessionId }))
+      sessionRepo.seed(buildSession({ externalId: sessionExternalId, id: sessionNumericId }))
       // Previous room (soft-deleted, should NOT be expired again)
       reservationRepo.seed(buildReservation({
         externalId: 'res-old',
-        sessionId,
+        sessionId: sessionNumericId,
         status: 'HOLD',
         deletedAt: new Date(),
       }))
       // Current room (active HOLD)
       reservationRepo.seed(buildReservation({
         externalId: 'res-current',
-        sessionId,
+        sessionId: sessionNumericId,
         status: 'HOLD',
         deletedAt: null,
       }))
     })
 
     it('When the expiration message arrives, then only the non-deleted HOLD reservation must be expired', async () => {
-      await consumer.handle(buildMessage({ sessionId, staffId }))
+      await consumer.handle(buildMessage({ sessionId: sessionExternalId, staffId }))
 
       const reservations = reservationRepo.getAll()
       const current = reservations.find(r => r.externalId === 'res-current')!
