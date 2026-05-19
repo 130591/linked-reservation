@@ -29,6 +29,7 @@ export const sharedConfigSchema = z.object({
   stripeSecretKey: z.string(),
   stripePublishableKey: z.string(),
   stripeWebhookSecret: z.string(),
+  stripeCurrency: z.string().length(3).default('BRL'),
 
   database: z.object({
     host: z.string(),
@@ -75,6 +76,7 @@ export const sharedConfigFactory = (): SharedConfig => {
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    stripeCurrency: process.env.STRIPE_CURRENCY,
 
     database: {
       host: process.env.DATABASE_HOST,

@@ -18,6 +18,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "seed:booking": "ts-node -r tsconfig-paths/register scripts/seed-test-booking.ts",
     "migration:generate": "ts-node -r tsconfig-paths/register ./node_modules/.bin/typeorm migration:generate -d src/common/database/persistence/datasource.ts",
     "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/.bin/typeorm migration:run -d src/common/database/persistence/datasource.ts",
     "migration:revert": "ts-node -r tsconfig-paths/register ./node_modules/.bin/typeorm migration:revert -d src/common/database/persistence/datasource.ts"

@@ -11,7 +11,7 @@ const GRACEFUL_SHUTDOWN_TIMEOUT_MS = 25_000
 
 async function bootstrap() {
   initializeTransactionalContext()
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create(AppModule, { rawBody: true })
 
   const httpAdapterHost = app.get(HttpAdapterHost)
   app.useGlobalFilters(

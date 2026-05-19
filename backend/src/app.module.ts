@@ -8,6 +8,8 @@ import { HealthModule } from '@/common/health'
 import { NotificationModule } from './notification/notification.module'
 import { ConversationModule } from './conversation/conversation.module'
 import { IdentityModule } from './identity/identity.module'
+import { ReservationModule } from './reservation/reservation.module'
+import { PaymentModule } from './payment/payment.module'
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { IdentityModule } from './identity/identity.module'
         NotificationModule,
         ConversationModule,
         IdentityModule,
+        ReservationModule,
+        PaymentModule,
       ]
       : []),
   ],
