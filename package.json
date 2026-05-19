@@ -1,0 +1,8 @@
+{
+  "name": "linked-reservation",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ]
+}
