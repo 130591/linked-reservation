@@ -45,7 +45,7 @@ describe('Scenario: Stripe error mapper', () => {
 
   describe('Given a non-Stripe error', () => {
     it('When mapped, Then result is PAYMENT_PROVIDER_UNAVAILABLE', () => {
-      expect(mapStripeError(new Error('network timeout')).code).toBe('PAYMENT_PROVIDER_UNAVAILABLE')
+      expect(StripeError.exception(new Error('network timeout')).code).toBe('PAYMENT_PROVIDER_UNAVAILABLE')
     })
   })
 })
@@ -61,7 +61,7 @@ describe('Scenario: Stripe status mapper', () => {
     ['canceled',                PaymentIntentStatus.cancelled],
     ['unknown_status',          PaymentIntentStatus.pending],
   ])('When Stripe status is %s, Then local status is %s', (stripeStatus, expected) => {
-    expect(StripeStatus.translate(stripeStatus)).toBe(expected)
+    expect(StripeStatus.translate(stripeStatus as any)).toBe(expected)
   })
 })
 
@@ -153,7 +153,7 @@ describe('Scenario: PaymentAPI integration tests', () => {
         reservationId: RESERVATION_ID,
         amountCents:   9900,
         description:   'Quarto Standard',
-        guestEmail:    'guest@example.com',
+        guest: { name: 'Guest', email: 'guest@example.com', phone: '+5511999990001' },
       })
 
       expect(result.isOk()).toBe(true)
@@ -177,7 +177,7 @@ describe('Scenario: PaymentAPI integration tests', () => {
         reservationId: RESERVATION_ID,
         amountCents:   9900,
         description:   'Quarto Standard',
-        guestEmail:    'guest@example.com',
+        guest: { name: 'Guest', email: 'guest@example.com', phone: '+5511999990001' },
       })
 
       expect(result.isErr()).toBe(true)
@@ -199,7 +199,7 @@ describe('Scenario: PaymentAPI integration tests', () => {
         reservationId: RESERVATION_ID,
         amountCents:   100,
         description:   'Test',
-        guestEmail:    'a@b.com',
+        guest: { name: 'Test Guest', email: 'a@b.com', phone: '+5511900000001' },
       }))._unsafeUnwrap()
 
       const result = await paymentApi.getStatus(intentId)
@@ -221,7 +221,7 @@ describe('Scenario: PaymentAPI integration tests', () => {
         reservationId: RESERVATION_ID,
         amountCents:   100,
         description:   'Test',
-        guestEmail:    'a@b.com',
+        guest: { name: 'Test Guest', email: 'a@b.com', phone: '+5511900000001' },
       }))._unsafeUnwrap()
 
       mockStripe.paymentIntents.retrieve.mockResolvedValue({ id: 'pi_refresh_test', status: 'succeeded' })
@@ -248,7 +248,7 @@ describe('Scenario: PaymentAPI integration tests', () => {
         reservationId: RESERVATION_ID,
         amountCents:   100,
         description:   'Test',
-        guestEmail:    'a@b.com',
+        guest: { name: 'Test Guest', email: 'a@b.com', phone: '+5511900000001' },
       }))._unsafeUnwrap()
 
       mockStripe.paymentIntents.retrieve.mockClear()

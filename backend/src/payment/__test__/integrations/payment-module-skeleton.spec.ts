@@ -154,7 +154,7 @@ describe('Scenario: Payment repository integration tests', () => {
       }))
       const eventPayload = { id: 'evt_ok', type: 'payment_intent.succeeded' }
 
-      await intentRepo.markSucceeded(intent.id, eventPayload)
+      await intentRepo.transitionStatus(intent.id, PaymentIntentStatus.succeeded, eventPayload)
 
       const updated = await intentRepo.findOneById(intent.externalId)
       expect(updated!.status).toBe(PaymentIntentStatus.succeeded)
