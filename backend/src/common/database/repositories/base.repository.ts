@@ -35,6 +35,12 @@ export abstract class DefaultTypeOrmRepository<T extends DefaultEntity<T>> {
     })
   }
 
+  async findOneByPk(id: number): Promise<T | null> {
+    return this.repository.findOne({
+      where: { id } as any,
+    })
+  }
+
   async findOne(options: FindOneOptions<T>): Promise<T | null> {
     return this.repository.findOne(options)
   }

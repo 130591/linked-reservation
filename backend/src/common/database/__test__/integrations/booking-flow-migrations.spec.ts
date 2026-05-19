@@ -222,8 +222,8 @@ describe('Scenario: ReservationEntity exposes the four new booking columns', () 
 
   it('When a ReservationEntity is constructed without booking-flow fields, Then they default to undefined (null on persistence)', () => {
     const entity = new ReservationEntity({
-      roomId:    '11111111-1111-1111-1111-111111111111',
-      sessionId: '22222222-2222-2222-2222-222222222222',
+      roomId:    1,
+      sessionId: 2,
     })
 
     expect(entity.bookingReference).toBeUndefined()

@@ -16,6 +16,7 @@ export class CreatePaymentSchema1775960000000 implements MigrationInterface {
         "amount_cents" bigint NOT NULL,
         "currency" varchar(3) NOT NULL DEFAULT 'BRL',
         "status" varchar NOT NULL DEFAULT 'pending',
+        "customer" jsonb NOT NULL DEFAULT '{}',
         "last_event_payload" jsonb,
         "confirmed_at" TIMESTAMP WITH TIME ZONE,
         CONSTRAINT "UQ_payment_intents_external_id" UNIQUE ("external_id"),
