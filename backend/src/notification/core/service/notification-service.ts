@@ -104,7 +104,7 @@ export class NotificationService {
 
       await this.notificationRepo.update(notification.id, {
         status: 'FAILED',
-        failedAt: new Date(),
+        failedAt: () => 'CURRENT_TIMESTAMP',
         error: error.message
       })
       return
@@ -115,7 +115,7 @@ export class NotificationService {
     if (sendResult.isOk()) {
       await this.notificationRepo.update(notification.id, {
         status: 'SENT',
-        sentAt: new Date()
+        sentAt: () => 'CURRENT_TIMESTAMP'
       })
       return
     }
@@ -127,7 +127,7 @@ export class NotificationService {
 
     await this.notificationRepo.update(notification.id, {
       status: 'FAILED',
-      failedAt: new Date(),
+      failedAt: () => 'CURRENT_TIMESTAMP',
       error: `[${sendError.code}] ${sendError.message}`
     })
 

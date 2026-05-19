@@ -96,16 +96,4 @@ export class TemplateRenderer {
           return compiled
         })
   }
-
-
-
-
-
-
-
-
-
-
-
-
 }
