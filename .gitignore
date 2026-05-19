@@ -7,6 +7,11 @@ backend/coverage/
 backend/.env
 backend/.env.local
 
+/node_modules
+/frontend/node_modules
+/frontend/coverage
+/frontend/dist
+
 # IDE
 .vscode/
 .idea/
@@ -16,3 +21,7 @@ backend/.env.local
 # OS
 .DS_Store
 Thumbs.db
+
+# Agent skills (local-only)
+.claude/skills/
+.agents/skills/
