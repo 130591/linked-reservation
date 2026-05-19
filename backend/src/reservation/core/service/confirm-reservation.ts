@@ -1,5 +1,5 @@
 import { BadGatewayException, Injectable } from '@nestjs/common'
-import { ReservationRepository, ReservationEntity } from '../../persist'
+import { ReservationRepository } from '../../persist'
 import { Reservation, GuestInfo, Room } from '../domain'
 
 interface ConfirmReservationCommand {
@@ -32,8 +32,7 @@ export class ConfirmReservation {
       })
     }
 
-    const reservation = reservationOrError.value
-    const entity = ReservationEntity.fromDomain(reservation)
-    await this.reservationRepository.save(entity)
+    // Legacy path — not in use by the current booking flow
+    throw new BadGatewayException('ConfirmReservation is not supported in the current booking flow')
   }
 }

@@ -19,7 +19,7 @@ export class ReservationRepository extends DefaultTypeOrmRepository<ReservationE
     ]).then(rows => rows.map(row => this.toDomain(row)))
   }
 
-  async findActiveHoldBySession(sessionId: string): Promise<ReservationEntity | null> {
+  async findActiveHoldBySession(sessionId: number): Promise<ReservationEntity | null> {
     return this.findOne({
       where: {
         sessionId,
@@ -36,7 +36,7 @@ export class ReservationRepository extends DefaultTypeOrmRepository<ReservationE
   async cancelHold(reservationId: string): Promise<void> {
     await this.update(reservationId, {
       status: 'CANCELLED',
-      deletedAt: new Date()
+      deletedAt: () => 'CURRENT_TIMESTAMP'
     })
   }
 

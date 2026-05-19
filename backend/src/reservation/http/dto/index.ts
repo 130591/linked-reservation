@@ -1,6 +1,8 @@
 export * from './rooms'
 export * from './generate-link'
 export * from './reservation'
+export * from './create-payment-intent.dto'
+export * from './confirmation-view'
 
 export type Room = {
   id: string

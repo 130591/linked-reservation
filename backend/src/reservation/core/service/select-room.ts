@@ -9,6 +9,7 @@ import {
   ReservationSessionRepository,
   ReservationSessionEntity,
   ReservationEntity,
+  RoomEntity,
   RoomRepository
 } from '@/reservation/persist'
 import { SelectRoomCommand } from '@/reservation/http/dto'
@@ -36,11 +37,11 @@ export class SelectRoom {
 
   private createHold(
     session: ReservationSessionEntity,
-    roomId: string
+    room: RoomEntity
   ): ReservationEntity {
     return new ReservationEntity({
-      roomId,
-      sessionId: session.externalId,
+      roomId: room.id,
+      sessionId: session.id,
       checkIn: session.checkIn,
       checkOut: session.checkOut,
       status: 'HOLD',
@@ -57,7 +58,7 @@ export class SelectRoom {
     }
 
     const room = await this.roomRepo.findOneBy({
-      id: command.roomId,
+      externalId: command.roomId,
       stayId: session.stayId
     })
 
@@ -67,35 +68,35 @@ export class SelectRoom {
 
     const existingHold = await this.reservationRepo.findOne({
       where: {
-        sessionId: session.externalId,
+        sessionId: session.id as any,
         status: 'HOLD',
         deletedAt: IsNull()
       }
     })
 
     if (existingHold) {
-      if (existingHold.roomId === command.roomId) {
+      if (existingHold.roomId === room.id) {
         return ok({
           reservationId: existingHold.externalId,
-          roomId: existingHold.roomId,
+          roomId: room.externalId,
           sessionId: session.externalId,
           expiresAt: existingHold.expiresAt
         })
       }
 
       await this.reservationRepo.update(existingHold.id, {
-        deletedAt: new Date()
+        deletedAt: () => 'CURRENT_TIMESTAMP'
       })
     }
 
     try {
       const hold = await this.reservationRepo.save(
-        this.createHold(session, command.roomId)
+        this.createHold(session, room)
       )
 
       return ok({
         reservationId: hold.externalId,
-        roomId: hold.roomId,
+        roomId: room.externalId,
         sessionId: session.externalId,
         expiresAt: hold.expiresAt
       })

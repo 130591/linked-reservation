@@ -3,6 +3,7 @@ import { ReservationSessionRepository } from './repositories/reservation-session
 import { ReservationEntity } from './entities/reservation'
 import { ReservationSessionEntity } from './entities/reservation-session'
 import { RoomRepository, StayRepository } from './repositories'
+import { RoomEntity } from './entities/room'
 import { StayEntity } from './entities/stay'
 
 export {
@@ -11,6 +12,7 @@ export {
   ReservationSessionRepository,
   ReservationSessionEntity,
   RoomRepository,
+  RoomEntity,
   StayRepository,
   StayEntity
 }

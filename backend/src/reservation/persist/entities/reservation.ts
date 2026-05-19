@@ -1,5 +1,4 @@
 import { DefaultEntity } from '@/common/database/entities'
-import { Reservation } from '@/reservation/core/domain'
 import { Column, Entity, Exclusion } from 'typeorm'
 
 export type ReservationEntityStatus = 'HOLD' | 'CONFIRMED' | 'EXPIRED'
@@ -10,11 +9,11 @@ export type ReservationEntityStatus = 'HOLD' | 'CONFIRMED' | 'EXPIRED'
 )
 export class ReservationEntity extends DefaultEntity<ReservationEntity> {
 
-  @Column({ name: 'room_id', type: 'uuid' })
-  roomId: string
+  @Column({ name: 'room_id', type: 'bigint' })
+  roomId: number
 
-  @Column({ name: 'session_id', type: 'uuid' })
-  sessionId: string
+  @Column({ name: 'session_id', type: 'bigint' })
+  sessionId: number
 
   @Column({ name: 'check_in', type: 'timestamptz' })
   checkIn: Date
@@ -46,13 +45,4 @@ export class ReservationEntity extends DefaultEntity<ReservationEntity> {
   @Column({ name: 'guest_phone', type: 'varchar', length: 32, nullable: true })
   guestPhone: string | null
 
-  static fromDomain(reservation: Reservation): ReservationEntity {
-    return new ReservationEntity({
-      roomId: reservation.getRooms()[0].getId(),
-      checkIn: reservation.getPeriod().getStartDate(),
-      checkOut: reservation.getPeriod().getEndDate(),
-      status: 'HOLD',
-      deletedAt: null
-    })
-  }
 }

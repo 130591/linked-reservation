@@ -11,4 +11,7 @@ export class RoomEntity extends DefaultEntity<RoomEntity> {
 
   @Column()
   capacity: number
+
+  @Column({ name: 'price_per_night', type: 'bigint', default: 0 })
+  pricePerNight: number
 }

@@ -8,7 +8,7 @@ export const sql = `
         status,
         expires_at as "expiresAt",
         deleted_at as "deletedAt"
-      from reservations
+      from reservation.reservations
       where tstzrange(check_in::timestamp, check_out::timestamp, '[]') && tstzrange($1::timestamp, $2::timestamp, '[]')
       and status in ('HOLD', 'CONFIRMED')
       and deleted_at is null;

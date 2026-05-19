@@ -5,7 +5,7 @@ import { EVENT_BUS, EventBus } from '@/common/messaging'
 import { EventQueues, ReservationConfirmedPayload } from '@/common/events'
 import { ConfigService } from '@/common/config'
 import { DomainError } from '@/common/exceptions'
-import { ReservationRepository, ReservationSessionRepository } from '@/reservation/persist'
+import { ReservationRepository, ReservationSessionRepository, RoomRepository } from '@/reservation/persist'
 import { BookingReferenceService } from './booking-reference'
 
 export interface ConfirmPaymentCommand {
@@ -27,6 +27,7 @@ export class ConfirmPayment {
   constructor(
     private readonly reservationRepo: ReservationRepository,
     private readonly sessionRepo: ReservationSessionRepository,
+    private readonly roomRepo: RoomRepository,
     private readonly bookingRefService: BookingReferenceService,
     private readonly configService: ConfigService,
     @Inject(EVENT_BUS) private readonly eventBus: EventBus,
@@ -51,7 +52,10 @@ export class ConfirmPayment {
       })
     }
 
-    const session = await this.sessionRepo.findOneById(reservation.sessionId)
+    const [session, room] = await Promise.all([
+      this.sessionRepo.findOneByPk(reservation.sessionId),
+      this.roomRepo.findOneByPk(reservation.roomId),
+    ])
     if (!session || session.status !== 'ACTIVE') {
       this.logger.warn(`Session not active for reservation ${reservation.externalId}`)
       return err(DomainError.SESSION_EXPIRED())
@@ -78,7 +82,7 @@ export class ConfirmPayment {
       {
         reservationId:    reservation.externalId,
         stayId:           session.stayId,
-        roomId:           reservation.roomId,
+        roomId:           room?.externalId ?? String(reservation.roomId),
         checkIn:          reservation.checkIn.toISOString(),
         checkOut:         reservation.checkOut.toISOString(),
         guestName:        command.guestName,

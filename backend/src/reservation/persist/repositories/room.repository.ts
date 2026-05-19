@@ -29,9 +29,11 @@ export class RoomRepository extends DefaultTypeOrmRepository<RoomEntity> {
   protected toDomain(row: any) {
     return new RoomEntity({
       id: row.id,
+      externalId: row.externalId,
       name: row.name,
       stayId: row.stayId,
       capacity: row.capacity,
+      pricePerNight: Number(row.pricePerNight ?? 0),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt
     })
