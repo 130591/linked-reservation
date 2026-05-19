@@ -61,7 +61,7 @@ export function createApiClient(token: string | null, baseUrl = '') {
     createPaymentIntent: (body: CreatePaymentIntentBody) =>
       post<CreatePaymentIntentResult>('/booking/payment-intent', body),
     getPaymentStatus: (intentId: string) =>
-      get<PaymentStatusResult>(`/booking/payment-status?intentId=${encodeURIComponent(intentId)}`),
+      get<PaymentStatusResult>(`/payment/status?intentId=${encodeURIComponent(intentId)}`),
     confirmBooking: (intentId: string) =>
       post<ConfirmBookingResult>('/booking/confirmation', { intentId }),
     getConfirmation: () => get<ConfirmationView>('/booking/confirmation'),

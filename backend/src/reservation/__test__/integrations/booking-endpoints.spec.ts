@@ -1,9 +1,6 @@
 import 'reflect-metadata'
 import {
-  Controller,
-  Get,
   INestApplication,
-  Module,
   ValidationPipe,
 } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
@@ -26,6 +23,9 @@ import { WebhookController } from '@/payment/http/controller/webhook'
 import { PaymentIntentService } from '@/payment/core/service/payment-intent.service'
 import { WebhookEventRepository } from '@/payment/persist/repositories/webhook-event.repository'
 import { STRIPE_CLIENT } from '@/common/integrations/stripe'
+import { PaymentController } from '@/payment/http/controller/payment'
+import { ResolvePaymentStatus } from '@/payment/core/service/resolve-payment-status'
+import { InitiateBookingPayment } from '@/reservation/core/service/initiate-booking-payment'
 
 jest.mock('typeorm-transactional', () => ({
   Transactional: () => (_target: any, _key: any, descriptor: any) => descriptor,
@@ -95,17 +95,11 @@ async function buildApp(overrides: {
   const reservationRow = overrides.reservationRow ?? RESERVATION_ROW
   const intentRow     = overrides.intentRow     ?? PAYMENT_INTENT_ROW
 
-  const mockSessionRepo     = { findOneById: jest.fn().mockResolvedValue(sessionRow) }
+  const mockSessionRepo     = { findOneById: jest.fn().mockResolvedValue(sessionRow), findOneByPk: jest.fn().mockResolvedValue(sessionRow) }
   const mockReservationRepo = { findOneById: jest.fn().mockResolvedValue(reservationRow) }
-  const mockRoomRepo        = { findOneById: jest.fn().mockResolvedValue(ROOM_ROW) }
+  const mockRoomRepo        = { findOneById: jest.fn().mockResolvedValue(ROOM_ROW), findOneByPk: jest.fn().mockResolvedValue(ROOM_ROW) }
   const mockStayRepo        = { findOneById: jest.fn().mockResolvedValue(STAY_ROW) }
   const mockPaymentIntentRepo = { findOneById: jest.fn().mockResolvedValue(intentRow) }
-
-  const mockPaymentAPI = {
-    createIntent: jest.fn().mockResolvedValue(ok({ intentId: INTENT_EXT, clientSecret: 'cs_test_123' })),
-    getStatus: jest.fn().mockResolvedValue(ok({ status: intentRow?.status, succeededAt: intentRow?.confirmedAt })),
-    refreshFromProvider: jest.fn().mockResolvedValue(ok({ status: PaymentIntentStatus.succeeded })),
-  }
 
   const confirmPaymentResult = overrides.confirmPaymentResult ??
     ok({ reservationId: RESERVATION_EXT, bookingReference: BOOKING_REF })
@@ -123,6 +117,13 @@ async function buildApp(overrides: {
 
   const mockGetAvailableRooms = { handle: jest.fn().mockResolvedValue(ok([])) }
   const mockSelectRoom        = { handle: jest.fn().mockResolvedValue(ok({})) }
+  const mockInitiatePayment   = {
+    handle: jest.fn().mockResolvedValue({
+      intentId: INTENT_EXT,
+      clientSecret: 'cs_test_123',
+      publishableKey: 'pk_test_abc',
+    }),
+  }
 
   const module: TestingModule = await Test.createTestingModule({
     controllers: [BookingController, ReservationController],
@@ -135,10 +136,10 @@ async function buildApp(overrides: {
       { provide: RoomRepository,               useValue: mockRoomRepo },
       { provide: StayRepository,               useValue: mockStayRepo },
       { provide: PaymentIntentRepository,      useValue: mockPaymentIntentRepo },
-      { provide: PaymentAPI,                   useValue: mockPaymentAPI },
       { provide: ConfirmPayment,               useValue: mockConfirmPayment },
       { provide: GetAvailableRooms,            useValue: mockGetAvailableRooms },
       { provide: SelectRoom,                   useValue: mockSelectRoom },
+      { provide: InitiateBookingPayment,       useValue: mockInitiatePayment },
       { provide: ConfigService,                useValue: mockConfig },
     ],
   }).compile()
@@ -215,42 +216,21 @@ describe('Scenario: POST /booking/payment-intent — invalid email', () => {
   })
 })
 
-// ── GET /booking/payment-status ───────────────────────────────────────────────
+// ── GET /payment/status ──────────────────────────────────────────────────────
 
-describe('Scenario: GET /booking/payment-status — pending, younger than 90s', () => {
-  let app: INestApplication
-  let tokenService: ReservationTokenService
-  let mockPaymentAPI: any
-
-  beforeEach(async () => {
-    const recentIntent = {
-      ...PAYMENT_INTENT_ROW,
-      status: PaymentIntentStatus.pending,
-      confirmedAt: null,
-      createdAt: new Date(Date.now() - 30_000), // 30s ago — NOT stale
-    }
-    ;({ app, tokenService } = await buildApp({ intentRow: recentIntent }))
-    mockPaymentAPI = app['httpAdapter']?.getHttpServer()
-  })
-  afterEach(() => app.close())
-
+describe('Scenario: GET /payment/status — pending, younger than 90s', () => {
   describe('Given an intent in pending, created 30 seconds ago', () => {
-    it('When GET /booking/payment-status is called, Then response is pending and Stripe is NOT called', async () => {
-      const sessionToken = tokenService.generate(SESSION_EXT)
-
+    it('When GET /payment/status is called, Then response is pending and Stripe is NOT called', async () => {
       const module: TestingModule = await Test.createTestingModule({
-        controllers: [BookingController, ReservationController],
+        controllers: [PaymentController],
         providers: [
           ReservationTokenService,
           ReservationTokenGuard,
-          ReservationViewTokenGuard,
+          ResolvePaymentStatus,
           {
             provide: ReservationSessionRepository,
             useValue: { findOneById: jest.fn().mockResolvedValue(SESSION_ROW) },
           },
-          { provide: ReservationRepository,   useValue: { findOneById: jest.fn() } },
-          { provide: RoomRepository,           useValue: { findOneById: jest.fn() } },
-          { provide: StayRepository,           useValue: { findOneById: jest.fn() } },
           {
             provide: PaymentIntentRepository,
             useValue: {
@@ -263,57 +243,44 @@ describe('Scenario: GET /booking/payment-status — pending, younger than 90s', 
             },
           },
           {
-            provide: PaymentAPI,
+            provide: PaymentIntentService,
             useValue: { refreshFromProvider: jest.fn().mockResolvedValue(ok({})) },
           },
-          { provide: ConfirmPayment,    useValue: { handle: jest.fn() } },
-          { provide: GetAvailableRooms, useValue: { handle: jest.fn() } },
-          { provide: SelectRoom,        useValue: { handle: jest.fn() } },
-          { provide: ConfigService,     useValue: { get: jest.fn().mockReturnValue(SECRET) } },
+          { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(SECRET) } },
         ],
       }).compile()
 
-      const freshApp = module.createNestApplication()
-      await freshApp.init()
-      const freshTokenService = module.get(ReservationTokenService)
-      const freshToken = freshTokenService.generate(SESSION_EXT)
-      const refreshSpy = module.get(PaymentAPI).refreshFromProvider as jest.Mock
+      const app = module.createNestApplication()
+      await app.init()
+      const tokenService = module.get(ReservationTokenService)
+      const token = tokenService.generate(SESSION_EXT)
+      const refreshSpy = module.get(PaymentIntentService).refreshFromProvider as jest.Mock
 
-      const res = await request(freshApp.getHttpServer())
-        .get(`/booking/payment-status?intentId=${INTENT_EXT}`)
-        .set('Authorization', `Bearer ${freshToken}`)
+      const res = await request(app.getHttpServer())
+        .get(`/payment/status?intentId=${INTENT_EXT}`)
+        .set('Authorization', `Bearer ${token}`)
         .expect(200)
 
       expect(res.body.status).toBe('pending')
       expect(refreshSpy).not.toHaveBeenCalled()
-      await freshApp.close()
+      await app.close()
     })
   })
 })
 
-describe('Scenario: GET /booking/payment-status — pending, older than 90s, Stripe says succeeded', () => {
-  let app: INestApplication
-
-  beforeEach(async () => {
-    ;({ app } = await buildApp())
-  })
-  afterEach(() => app.close())
-
+describe('Scenario: GET /payment/status — pending, older than 90s, Stripe says succeeded', () => {
   describe('Given an intent in pending created 120 seconds ago and Stripe reports succeeded', () => {
-    it('When GET /booking/payment-status is called, Then the response is succeeded', async () => {
+    it('When GET /payment/status is called, Then the response is succeeded', async () => {
       const module: TestingModule = await Test.createTestingModule({
-        controllers: [BookingController, ReservationController],
+        controllers: [PaymentController],
         providers: [
           ReservationTokenService,
           ReservationTokenGuard,
-          ReservationViewTokenGuard,
+          ResolvePaymentStatus,
           {
             provide: ReservationSessionRepository,
             useValue: { findOneById: jest.fn().mockResolvedValue(SESSION_ROW) },
           },
-          { provide: ReservationRepository,   useValue: { findOneById: jest.fn() } },
-          { provide: RoomRepository,           useValue: { findOneById: jest.fn() } },
-          { provide: StayRepository,           useValue: { findOneById: jest.fn() } },
           {
             provide: PaymentIntentRepository,
             useValue: {
@@ -321,94 +288,36 @@ describe('Scenario: GET /booking/payment-status — pending, older than 90s, Str
                 externalId: INTENT_EXT,
                 status: PaymentIntentStatus.pending,
                 confirmedAt: null,
-                createdAt: new Date(Date.now() - 120_000), // 2 minutes ago — STALE
+                createdAt: new Date(Date.now() - 120_000),
               }),
             },
           },
           {
-            provide: PaymentAPI,
+            provide: PaymentIntentService,
             useValue: {
               refreshFromProvider: jest
                 .fn()
                 .mockResolvedValue(ok({ status: PaymentIntentStatus.succeeded })),
             },
           },
-          { provide: ConfirmPayment,    useValue: { handle: jest.fn() } },
-          { provide: GetAvailableRooms, useValue: { handle: jest.fn() } },
-          { provide: SelectRoom,        useValue: { handle: jest.fn() } },
-          { provide: ConfigService,     useValue: { get: jest.fn().mockReturnValue(SECRET) } },
+          { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(SECRET) } },
         ],
       }).compile()
 
-      const freshApp = module.createNestApplication()
-      await freshApp.init()
-      const freshTokenService = module.get(ReservationTokenService)
-      const freshToken = freshTokenService.generate(SESSION_EXT)
-      const refreshSpy = module.get(PaymentAPI).refreshFromProvider as jest.Mock
+      const app = module.createNestApplication()
+      await app.init()
+      const tokenService = module.get(ReservationTokenService)
+      const token = tokenService.generate(SESSION_EXT)
+      const refreshSpy = module.get(PaymentIntentService).refreshFromProvider as jest.Mock
 
-      const res = await request(freshApp.getHttpServer())
-        .get(`/booking/payment-status?intentId=${INTENT_EXT}`)
-        .set('Authorization', `Bearer ${freshToken}`)
+      const res = await request(app.getHttpServer())
+        .get(`/payment/status?intentId=${INTENT_EXT}`)
+        .set('Authorization', `Bearer ${token}`)
         .expect(200)
 
       expect(res.body.status).toBe('succeeded')
       expect(refreshSpy).toHaveBeenCalledWith(INTENT_EXT)
-      await freshApp.close()
-    })
-  })
-})
-
-// ── POST /booking/confirmation ───────────────────────────────────────────────
-
-describe('Scenario: POST /booking/confirmation — happy path', () => {
-  let app: INestApplication
-  let tokenService: ReservationTokenService
-
-  beforeEach(async () => {
-    ({ app, tokenService } = await buildApp())
-  })
-  afterEach(() => app.close())
-
-  describe('Given a succeeded intent and HOLD reservation', () => {
-    it('When POST /booking/confirmation is called, Then reservation is CONFIRMED, response has viewToken and correct bookingReference', async () => {
-      const sessionToken = tokenService.generate(SESSION_EXT)
-
-      const res = await request(app.getHttpServer())
-        .post('/booking/confirmation')
-        .set('Authorization', `Bearer ${sessionToken}`)
-        .send({ intentId: INTENT_EXT })
-        .expect(201)
-
-      expect(res.body.viewToken).toBeDefined()
-      expect(typeof res.body.viewToken).toBe('string')
-      expect(res.body.confirmation.bookingReference).toBe(BOOKING_REF)
-      expect(res.body.confirmation.guest.email).toBe('maria@example.com')
-      expect(res.body.confirmation.room.id).toBe(ROOM_EXT)
-    })
-  })
-})
-
-describe('Scenario: POST /booking/confirmation — idempotent (already CONFIRMED)', () => {
-  let app: INestApplication
-  let tokenService: ReservationTokenService
-
-  beforeEach(async () => {
-    ({ app, tokenService } = await buildApp())
-  })
-  afterEach(() => app.close())
-
-  describe('Given an already CONFIRMED reservation for the same intentId', () => {
-    it('When POST /booking/confirmation is called again, Then 201 with same bookingReference and a fresh viewToken', async () => {
-      const sessionToken = tokenService.generate(SESSION_EXT)
-
-      const res = await request(app.getHttpServer())
-        .post('/booking/confirmation')
-        .set('Authorization', `Bearer ${sessionToken}`)
-        .send({ intentId: INTENT_EXT })
-        .expect(201)
-
-      expect(res.body.viewToken).toBeDefined()
-      expect(res.body.confirmation.bookingReference).toBe(BOOKING_REF)
+      await app.close()
     })
   })
 })
@@ -474,11 +383,13 @@ describe('Scenario: Route registration — all booking and webhook routes are ac
     }
 
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [BookingController, ReservationController, WebhookController],
+      controllers: [BookingController, ReservationController, WebhookController, PaymentController],
       providers: [
         ReservationTokenService,
         ReservationTokenGuard,
         ReservationViewTokenGuard,
+        { provide: InitiateBookingPayment,       useValue: { handle: jest.fn() } },
+        ResolvePaymentStatus,
         { provide: STRIPE_CLIENT,                useValue: mockStripe },
         { provide: ReservationSessionRepository, useValue: { findOneById: jest.fn().mockResolvedValue(null) } },
         { provide: ReservationRepository,        useValue: { findOneById: jest.fn() } },
@@ -507,11 +418,8 @@ describe('Scenario: Route registration — all booking and webhook routes are ac
       const r1 = await request(app.getHttpServer()).post('/booking/payment-intent')
       expect(r1.status).not.toBe(404)
 
-      const r2 = await request(app.getHttpServer()).get('/booking/payment-status')
+      const r2 = await request(app.getHttpServer()).get('/payment/status')
       expect(r2.status).not.toBe(404)
-
-      const r3 = await request(app.getHttpServer()).post('/booking/confirmation')
-      expect(r3.status).not.toBe(404)
 
       const r4 = await request(app.getHttpServer()).get('/booking/confirmation')
       expect(r4.status).not.toBe(404)

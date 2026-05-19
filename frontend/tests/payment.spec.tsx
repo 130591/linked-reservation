@@ -176,7 +176,7 @@ describe('usePaymentStatus', () => {
     vi.useFakeTimers()
     let callCount = 0
     server.use(
-      http.get('/booking/payment-status', () => {
+      http.get('/payment/status', () => {
         callCount++
         return HttpResponse.json({ status: 'pending', succeededAt: null })
       }),
@@ -198,7 +198,7 @@ describe('usePaymentStatus', () => {
     vi.useFakeTimers()
     let callCount = 0
     server.use(
-      http.get('/booking/payment-status', () => {
+      http.get('/payment/status', () => {
         callCount++
         return HttpResponse.json({ status: 'succeeded', succeededAt: new Date().toISOString() })
       }),
@@ -224,7 +224,7 @@ describe('usePaymentStatus', () => {
     let callCount = 0
     const onFailed = vi.fn()
     server.use(
-      http.get('/booking/payment-status', () => {
+      http.get('/payment/status', () => {
         callCount++
         return HttpResponse.json({ status: 'failed', succeededAt: null })
       }),
@@ -246,7 +246,7 @@ describe('usePaymentStatus', () => {
     let callCount = 0
     const onFailed = vi.fn()
     server.use(
-      http.get('/booking/payment-status', () => {
+      http.get('/payment/status', () => {
         callCount++
         return HttpResponse.json({ status: 'cancelled', succeededAt: null })
       }),
@@ -267,7 +267,7 @@ describe('usePaymentStatus', () => {
     vi.useFakeTimers()
     let callCount = 0
     server.use(
-      http.get('/booking/payment-status', () => {
+      http.get('/payment/status', () => {
         callCount++
         return HttpResponse.json({ status: 'pending', succeededAt: null })
       }),
@@ -289,7 +289,7 @@ describe('usePaymentStatus', () => {
   it('calls POST /booking/confirmation exactly once on succeeded, then navigates to confirmation', async () => {
     let confirmationCallCount = 0
     server.use(
-      http.get('/booking/payment-status', () =>
+      http.get('/payment/status', () =>
         HttpResponse.json({ status: 'succeeded', succeededAt: new Date().toISOString() }),
       ),
       http.post('/booking/confirmation', () => {
@@ -340,7 +340,7 @@ describe('Integration: Payment step', () => {
       http.post('/booking/payment-intent', () =>
         HttpResponse.json({ intentId: 'pi-xyz', clientSecret: 'cs-x', publishableKey: 'pk-x' }),
       ),
-      http.get('/booking/payment-status', () => {
+      http.get('/payment/status', () => {
         pollCount++
         const status = pollCount >= 3 ? 'succeeded' : 'pending'
         return HttpResponse.json({ status, succeededAt: status === 'succeeded' ? new Date().toISOString() : null })
@@ -375,7 +375,7 @@ describe('Integration: Payment step', () => {
         intentCallCount++
         return HttpResponse.json({ intentId: `pi-${intentCallCount}`, clientSecret: 'cs-y', publishableKey: 'pk-y' })
       }),
-      http.get('/booking/payment-status', () =>
+      http.get('/payment/status', () =>
         HttpResponse.json({ status: 'failed', succeededAt: null }),
       ),
     )
@@ -409,7 +409,7 @@ describe('Integration: Payment step', () => {
       http.post('/booking/payment-intent', () =>
         HttpResponse.json({ intentId: 'pi-exp', clientSecret: 'cs-exp', publishableKey: 'pk-exp' }),
       ),
-      http.get('/booking/payment-status', () =>
+      http.get('/payment/status', () =>
         HttpResponse.json({ status: 'pending', succeededAt: null }),
       ),
     )

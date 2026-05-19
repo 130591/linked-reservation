@@ -271,7 +271,7 @@ describe('E2E: Full wizard happy path', () => {
             publishableKey: 'pk-e2e',
           }),
         ),
-        http.get('/booking/payment-status', () =>
+        http.get('/payment/status', () =>
           HttpResponse.json({ status: 'succeeded', succeededAt: new Date().toISOString() }),
         ),
         http.post('/booking/confirmation', () =>

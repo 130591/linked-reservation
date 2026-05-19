@@ -43,6 +43,7 @@ import { PaymentModule } from '@/payment/payment.module'
     ConfirmPayment,
     ReservationAPI,
     ReservationTokenService,
+    ReservationTokenGuard,
     ReservationViewTokenGuard,
   ],
 })
