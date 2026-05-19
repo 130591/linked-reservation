@@ -1,4 +1,27 @@
-import { IsEmail, IsInt, IsNotEmpty, IsPositive, IsString, IsUUID } from 'class-validator'
+import {
+  IsEmail,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsPositive,
+  IsString,
+  IsUUID,
+  ValidateNested,
+} from 'class-validator'
+import { Type } from 'class-transformer'
+
+export class GuestDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string
+
+  @IsEmail()
+  email: string
+
+  @IsString()
+  @IsNotEmpty()
+  phone: string
+}
 
 export class CreateIntentDto {
   @IsUUID()
@@ -9,9 +32,10 @@ export class CreateIntentDto {
   amountCents: number
 
   @IsString()
-  @IsNotEmpty()
-  description: string
+  @IsOptional()
+  description?: string
 
-  @IsEmail()
-  guestEmail: string
+  @ValidateNested()
+  @Type(() => GuestDto)
+  guest: GuestDto
 }

@@ -3,6 +3,16 @@ import { err, ok, Result } from 'neverthrow'
 import { DomainError } from '@/common/exceptions'
 import { PaymentIntentStatus } from './payment-intent-status'
 
+interface PaymentIntentEntitySnapshot {
+  externalId:      string
+  reservationId:   string
+  providerIntentId: string
+  amountCents:     number
+  currency:        string
+  status:          PaymentIntentStatus
+  confirmedAt:     Date | null
+}
+
 const TERMINAL_STATUSES = [PaymentIntentStatus.succeeded, PaymentIntentStatus.cancelled, PaymentIntentStatus.failed]
 
 export class PaymentIntent {
@@ -15,6 +25,18 @@ export class PaymentIntent {
     readonly status:           PaymentIntentStatus,
     readonly confirmedAt:      Date | null,
   ) {}
+
+  static rehydrate(entity: PaymentIntentEntitySnapshot): PaymentIntent {
+    return new PaymentIntent(
+      entity.externalId,
+      entity.reservationId,
+      entity.providerIntentId,
+      new Decimal(entity.amountCents),
+      entity.currency,
+      entity.status,
+      entity.confirmedAt,
+    )
+  }
 
   static create(
     id:               string,

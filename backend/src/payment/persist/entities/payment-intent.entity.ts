@@ -19,6 +19,9 @@ export class PaymentIntentEntity extends DefaultEntity<PaymentIntentEntity> {
   @Column({ type: 'varchar', default: PaymentIntentStatus.pending })
   status: PaymentIntentStatus
 
+  @Column({ type: 'jsonb' })
+  customer: { name: string; email: string; phone: string }
+
   @Column({ name: 'last_event_payload', type: 'jsonb', nullable: true })
   lastEventPayload: object | null
 

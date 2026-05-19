@@ -1,11 +1,14 @@
-import { Injectable, Logger, Inject } from '@nestjs/common'
-import { ok, err, Result } from 'neverthrow'
+import { Injectable, Logger } from '@nestjs/common'
+import { ResultAsync, Result, err, ok } from 'neverthrow'
+import { ConfigService } from '@/common/config'
 import { DomainError } from '@/common/exceptions'
-import { STRIPE_CLIENT, StripeClient } from '@/common/integrations/stripe'
 import { PaymentIntentRepository } from '@/payment/persist/repositories/payment-intent.repository'
 import { PaymentIntentEntity } from '@/payment/persist/entities/payment-intent.entity'
-import { PaymentIntent, PaymentIntentStatus, StripeStatus, StripeError } from '@/payment/core/domain'
+import { PaymentIntent, PaymentIntentStatus, StripeStatus } from '@/payment/core/domain'
+import { StripeIntegrationClient } from '@/common/integrations/stripe'
 import { CreateIntentDto } from '@/payment/http/dto/create-intent.dto'
+
+export type CreatePaymentIntentCommand = CreateIntentDto
 
 export interface CreateIntentResult {
   intentId:     string
@@ -22,115 +25,81 @@ export class PaymentIntentService {
   private readonly logger = new Logger(PaymentIntentService.name)
 
   constructor(
-    @Inject(STRIPE_CLIENT) private readonly stripe: StripeClient,
-    private readonly intentRepo: PaymentIntentRepository,
+    private readonly stripe:  StripeIntegrationClient,
+    private readonly intents: PaymentIntentRepository,
+    private readonly config:  ConfigService,
   ) {}
 
-  async createIntent(
-    input: CreateIntentDto,
-  ): Promise<Result<CreateIntentResult, DomainError>> {
-    let stripeIntent: Awaited<ReturnType<typeof this.stripe.paymentIntents.create>>
-
-    try {
-      stripeIntent = await this.stripe.paymentIntents.create({
-        amount:        input.amountCents,
-        currency:      'brl',
-        description:   input.description,
-        receipt_email: input.guestEmail,
-        automatic_payment_methods: { enabled: true },
+  createIntent(cmd: CreatePaymentIntentCommand): ResultAsync<CreateIntentResult, DomainError> {
+    return this.stripe
+      .createPaymentIntent({
+        amountCents: cmd.amountCents,
+        currency:    this.config.get('stripeCurrency'),
+        description: cmd.description,
+        guestEmail:  cmd.guest.email,
       })
-    } catch (error) {
-      this.logger.warn('Stripe createIntent failed', error)
-      return err(StripeError.exception(error))
-    }
-
-    const entity = await this.intentRepo.save(
-      new PaymentIntentEntity({
-        reservationId:    input.reservationId,
-        providerIntentId: stripeIntent.id,
-        amountCents:      input.amountCents,
-        currency:         'BRL',
-        status:           StripeStatus.translate(stripeIntent.status),
-        lastEventPayload: null,
-        confirmedAt:      null,
-      }),
-    )
-
-    this.logger.log(`PaymentIntent created: ${entity.externalId}`)
-    return ok({
-      intentId:     entity.externalId,
-      clientSecret: stripeIntent.client_secret!,
-    })
+      .map(async stripeIntent => {
+        const entity = await this.intents.createFromStripe(
+          { ...cmd, currency: this.config.get('stripeCurrency') },
+          stripeIntent,
+        )
+        this.logger.log(`PaymentIntent created: ${entity.externalId}`)
+        return {
+          intentId:     entity.externalId,
+          clientSecret: stripeIntent.clientSecret,
+        }
+      })
   }
 
-  async getStatus(
-    intentId: string,
-  ): Promise<Result<PaymentStatusResult, DomainError>> {
-    const entity = await this.intentRepo.findOneById(intentId)
+  async getStatus(intentId: string): Promise<Result<PaymentStatusResult, DomainError>> {
+    const entity = await this.intents.findOneById(intentId)
     if (!entity) return err(DomainError.PAYMENT_INTENT_NOT_FOUND())
 
-    return ok({
-      status:      entity.status,
-      succeededAt: entity.confirmedAt,
-    })
+    return ok({ status: entity.status, succeededAt: entity.confirmedAt })
   }
 
   async refreshFromProvider(
     intentId: string,
   ): Promise<Result<{ status: PaymentIntentStatus }, DomainError>> {
-    const entity = await this.intentRepo.findOneById(intentId)
+    const entity = await this.intents.findOneById(intentId)
     if (!entity) return err(DomainError.PAYMENT_INTENT_NOT_FOUND())
 
-    const domainResult = PaymentIntent.create(
-      entity.externalId,
-      entity.reservationId,
-      entity.providerIntentId,
-      entity.amountCents,
-      entity.currency,
-      entity.status,
-      entity.confirmedAt,
-    )
-    if (domainResult.isErr()) return err(domainResult.error)
-    const domain = domainResult.value
+    const intent = PaymentIntent.rehydrate(entity)
+    if (intent.isTerminal()) return ok({ status: intent.status })
 
-    if (domain.isTerminal()) {
-      return ok({ status: domain.status })
-    }
-
-    let stripeIntent: Awaited<ReturnType<typeof this.stripe.paymentIntents.retrieve>>
-    try {
-      stripeIntent = await this.stripe.paymentIntents.retrieve(entity.providerIntentId)
-    } catch (error) {
-      this.logger.warn(`Stripe retrieve failed for ${intentId}`, error)
-      return err(StripeError.exception(error))
-    }
-
-    const newStatus = StripeStatus.translate(stripeIntent.status)
-    if (newStatus !== entity.status) {
-      const update: Partial<PaymentIntentEntity> = { status: newStatus }
-      if (newStatus === PaymentIntentStatus.succeeded) {
-        update.confirmedAt = new Date()
-      }
-      await this.intentRepo.update(entity.id, update)
-      this.logger.log(`PaymentIntent ${intentId} refreshed: ${entity.status} → ${newStatus}`)
-    }
-
-    return ok({ status: newStatus })
+    return this.stripe
+      .retrievePaymentIntent(entity.providerIntentId)
+      .map(async stripeIntent => {
+        const next = StripeStatus.translate(stripeIntent.status)
+        if (next !== intent.status) {
+          await this.intents.transitionStatus(entity.id, next)
+        }
+        return { status: next }
+      })
   }
 
-  async processSucceeded(
+  processSucceeded(
     providerIntentId: string,
-    eventPayload:     object,
-  ): Promise<Result<void, DomainError>> {
-    const entity = await this.intentRepo.findByProviderIntentId(providerIntentId)
+    payload: object,
+  ): Promise<Result<PaymentIntentEntity, DomainError>> {
+    return this.applyWebhookTransition(providerIntentId, PaymentIntentStatus.succeeded, payload)
+  }
+
+  processFailed(providerIntentId: string, payload: object): Promise<Result<void, DomainError>> {
+    return this.applyWebhookTransition(providerIntentId, PaymentIntentStatus.failed, payload)
+      .then(r => r.map(() => undefined))
+  }
+
+  private async applyWebhookTransition(
+    providerIntentId: string,
+    target: PaymentIntentStatus,
+    payload: object,
+  ): Promise<Result<PaymentIntentEntity, DomainError>> {
+    const entity = await this.intents.findByProviderIntentId(providerIntentId)
     if (!entity) return err(DomainError.PAYMENT_INTENT_NOT_FOUND())
+    if (entity.status === target) return ok(entity)
 
-    if (entity.status === PaymentIntentStatus.succeeded) {
-      return ok(undefined)
-    }
-
-    await this.intentRepo.markSucceeded(entity.id, eventPayload)
-    this.logger.log(`PaymentIntent ${entity.externalId} marked succeeded via event`)
-    return ok(undefined)
+    await this.intents.transitionStatus(entity.id, target, payload)
+    return ok(entity)
   }
 }

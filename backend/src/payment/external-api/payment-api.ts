@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { Result } from 'neverthrow'
+import { Result, ResultAsync } from 'neverthrow'
 import { DomainError } from '@/common/exceptions'
 import { PaymentIntentStatus } from '@/payment/core/domain'
 import {
@@ -17,7 +17,7 @@ export class PaymentAPI {
 
   createIntent(
     input: CreateIntentDto,
-  ): Promise<Result<CreateIntentResult, DomainError>> {
+  ): ResultAsync<CreateIntentResult, DomainError> {
     return this.intentService.createIntent(input)
   }
 
