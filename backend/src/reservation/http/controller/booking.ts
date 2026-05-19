@@ -1,17 +1,13 @@
 import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common'
+import { DomainError } from '@/common/exceptions'
 import { ReservationTokenGuard } from '@/common/framework/guards/reservation-token.guard'
 import { Session } from '@/common/framework/decorators/session.decorator'
 import { ReservationSessionEntity } from '@/reservation/persist'
-import { ReservationRepository, RoomRepository, ReservationSessionRepository, StayRepository } from '@/reservation/persist'
-import { GetAvailableRooms, SelectRoom } from '@/reservation/core/service'
-import { ConfirmPayment } from '@/reservation/core/service'
-import { ReservationTokenService } from '@/reservation/core/service/reservation-token'
+import { GetAvailableRooms, InitiateBookingPayment, SelectRoom } from '@/reservation/core/service'
 import { PaymentAPI } from '@/payment/external-api/payment-api'
-import { PaymentIntentRepository } from '@/payment/persist/repositories/payment-intent.repository'
+import { PaymentIntentRepository } from '@/payment/persist'
 import { PaymentIntentStatus } from '@/payment/core/domain'
-import { DomainError } from '@/common/exceptions'
-import { ConfigService } from '@/common/config'
-import { SelectRoomDto, CreatePaymentIntentDto, ConfirmPaymentBodyDto, toConfirmationView } from '../dto'
+import { SelectRoomDto, CreatePaymentIntentDto } from '../dto'
 
 @Controller('booking')
 export class BookingController {
@@ -19,14 +15,8 @@ export class BookingController {
     private readonly getAvailableRoomsService: GetAvailableRooms,
     private readonly selectRoomService: SelectRoom,
     private readonly paymentAPI: PaymentAPI,
-    private readonly confirmPayment: ConfirmPayment,
-    private readonly tokenService: ReservationTokenService,
-    private readonly reservationRepo: ReservationRepository,
-    private readonly roomRepo: RoomRepository,
-    private readonly sessionRepo: ReservationSessionRepository,
-    private readonly stayRepo: StayRepository,
+    private readonly initiateBookingPayment: InitiateBookingPayment,
     private readonly paymentIntentRepo: PaymentIntentRepository,
-    private readonly configService: ConfigService,
   ) { }
 
   @UseGuards(ReservationTokenGuard)
@@ -71,36 +61,13 @@ export class BookingController {
     @Session() session: ReservationSessionEntity,
     @Body() body: CreatePaymentIntentDto,
   ) {
-    const reservation = await this.reservationRepo.findOneById(body.reservationId)
-    if (!reservation) throw DomainError.RESERVATION_NOT_FOUND()
-
-    const room = await this.roomRepo.findOneByPk(reservation.roomId)
-    if (!room) throw DomainError.ROOM_NOT_FOUND()
-
-    const nights = Math.max(
-      1,
-      Math.round(
-        (reservation.checkOut.getTime() - reservation.checkIn.getTime()) / 86_400_000
-      )
-    )
-    const amountCents = room.pricePerNight * nights
-
-    const result = await this.paymentAPI.createIntent({
+    return await this.initiateBookingPayment.handle({
       reservationId: body.reservationId,
-      amountCents,
-      description:   `Reserva ${session.stayName}`,
-      guest: {
-        name:  body.guestName,
-        email: body.guestEmail,
-        phone: body.guestPhone,
-      },
+      stayName: session.stayName,
+      guestName: body.guestName,
+      guestEmail: body.guestEmail,
+      guestPhone: body.guestPhone
     })
-    if (result.isErr()) throw result.error
-
-    return {
-      ...result.value,
-      publishableKey: this.configService.get('stripePublishableKey'),
-    }
   }
 
   @UseGuards(ReservationTokenGuard)
@@ -121,40 +88,5 @@ export class BookingController {
     }
 
     return { status: intent.status, succeededAt: intent.confirmedAt }
-  }
-
-  @UseGuards(ReservationTokenGuard)
-  @Post('confirmation')
-  async confirmBooking(
-    @Session() session: ReservationSessionEntity,
-    @Body() body: ConfirmPaymentBodyDto,
-  ) {
-    const paymentIntent = await this.paymentIntentRepo.findOneById(body.intentId)
-    if (!paymentIntent) throw DomainError.PAYMENT_INTENT_NOT_FOUND()
-
-    if (paymentIntent.status !== PaymentIntentStatus.succeeded) {
-      throw DomainError.PAYMENT_REQUIRES_ACTION()
-    }
-
-    const confirmResult = await this.confirmPayment.handle({
-      paymentIntentId: body.intentId,
-      guestName: paymentIntent.customer?.name  ?? '',
-      guestEmail: paymentIntent.customer?.email ?? '',
-      guestPhone: paymentIntent.customer?.phone ?? '',
-    })
-    if (confirmResult.isErr()) throw confirmResult.error
-
-    const viewToken = this.tokenService.generateViewToken(confirmResult.value.reservationId)
-
-    const [reservation, stay] = await Promise.all([
-      this.reservationRepo.findOneById(confirmResult.value.reservationId),
-      this.stayRepo.findOneById(session.stayId),
-    ])
-    const room = await this.roomRepo.findOneByPk(reservation!.roomId)
-
-    return {
-      viewToken,
-      confirmation: toConfirmationView(reservation!, room!, stay!, paymentIntent, session),
-    }
   }
 }

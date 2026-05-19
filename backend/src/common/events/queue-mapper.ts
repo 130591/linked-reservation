@@ -11,6 +11,7 @@ export const EventQueues = {
   PROPERTY_TRIAL_EXPIRING:      'property.trial.expiring',
   PAYMENT_INTENT_SUCCEEDED:     'payment.intent.succeeded',
   PAYMENT_INTENT_FAILED:        'payment.intent.failed',
+  CONFIRM_BOOKING:              'confirm.booking',
 } as const
 
 export const QueueNames = {
@@ -22,6 +23,7 @@ export const QueueNames = {
   PROPERTY_TRIAL_EXPIRING:      'property_trial_expiring',
   PAYMENT_INTENT_SUCCEEDED:     'payment_intent_succeeded',
   PAYMENT_INTENT_FAILED:        'payment_intent_failed',
+  CONFIRM_BOOKING:              'confirm_booking',
 } as const
 
 export type EventQueueType = typeof EventQueues[keyof typeof EventQueues]
@@ -40,6 +42,7 @@ export function mapEventToQueue(eventQueue: EventQueueType): QueueNameType {
     [EventQueues.PROPERTY_TRIAL_EXPIRING]:  QueueNames.PROPERTY_TRIAL_EXPIRING,
     [EventQueues.PAYMENT_INTENT_SUCCEEDED]: QueueNames.PAYMENT_INTENT_SUCCEEDED,
     [EventQueues.PAYMENT_INTENT_FAILED]:    QueueNames.PAYMENT_INTENT_FAILED,
+    [EventQueues.CONFIRM_BOOKING]:          QueueNames.CONFIRM_BOOKING,
   } as const
 
   return mapping[eventQueue]
