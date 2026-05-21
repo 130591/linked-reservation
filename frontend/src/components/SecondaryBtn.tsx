@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { D1 } from './theme'
+import { useTheme } from '../theme'
 
 interface Props {
   children: ReactNode
@@ -8,14 +8,15 @@ interface Props {
 }
 
 export function SecondaryBtn({ children, onClick, full }: Props) {
+  const t = useTheme()
   return (
     <button
       onClick={onClick}
       style={{
         width: full ? '100%' : undefined,
-        padding: '11px 18px', border: `1px solid ${D1.hair}`, borderRadius: 10,
-        background: 'transparent', color: D1.ink, cursor: 'pointer',
-        fontSize: 13, fontWeight: 500,
+        padding: '11px 18px', border: `1px solid ${t.color.hair}`, borderRadius: t.radius.lg,
+        background: 'transparent', color: t.color.ink, cursor: 'pointer',
+        fontSize: t.fontSize.base, fontWeight: t.fontWeight.medium,
       }}
     >
       {children}

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTheme } from '../theme'
 
 interface Props {
   open: boolean
@@ -8,7 +9,11 @@ interface Props {
   ink?: string
 }
 
-export function PhoneSheet({ open, onClose, children, bg = '#fff', ink = '#111' }: Props) {
+export function PhoneSheet({ open, onClose, children, bg, ink }: Props) {
+  const t = useTheme()
+  const bgColor = bg ?? t.color.bg
+  const inkColor = ink ?? t.color.ink
+
   if (!open) return null
   return (
     <div
@@ -22,13 +27,13 @@ export function PhoneSheet({ open, onClose, children, bg = '#fff', ink = '#111' 
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: bg, color: ink,
+          background: bgColor, color: inkColor,
           borderTopLeftRadius: 20, borderTopRightRadius: 20,
           padding: '10px 0 34px', maxHeight: '90%', overflow: 'auto',
           boxShadow: '0 -20px 40px rgba(0,0,0,0.15)',
         }}
       >
-        <div style={{ width: 36, height: 4, borderRadius: 4, background: 'rgba(0,0,0,0.15)', margin: '4px auto 10px' }} />
+        <div style={{ width: 36, height: 4, borderRadius: t.radius.sm, background: 'rgba(0,0,0,0.15)', margin: '4px auto 10px' }} />
         {children}
       </div>
       <style>{`

@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Routes, Route, useSearchParams, useNavigate, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query'
 import { SessionProvider } from './context/SessionContext'
+import { ThemeProvider } from './theme'
 import { AppIntlProvider } from './i18n'
 import { BookingRoute } from './routes/BookingRoute'
 import { ConfirmationRoute } from './routes/ConfirmationRoute'
@@ -56,10 +57,12 @@ function AppRoutes() {
 
 export function App() {
   return (
-    <AppIntlProvider>
-      <SessionProvider>
-        <AppRoutes />
-      </SessionProvider>
-    </AppIntlProvider>
+    <ThemeProvider>
+      <AppIntlProvider>
+        <SessionProvider>
+          <AppRoutes />
+        </SessionProvider>
+      </AppIntlProvider>
+    </ThemeProvider>
   )
 }

@@ -1,4 +1,5 @@
 import { useIntl } from 'react-intl'
+import { useTheme } from '../theme'
 import { Icon } from './Icon'
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 
 export function WhatsAppHeader({ host, onBack, tone = 'light' }: Props) {
   const intl = useIntl()
+  const t = useTheme()
   const ink = tone === 'dark' ? '#f6f1e7' : '#2a231c'
   const bg = tone === 'dark' ? 'rgba(22,18,14,0.85)' : 'rgba(255,252,246,0.85)'
   const border = tone === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(42,35,28,0.08)'
@@ -33,7 +35,7 @@ export function WhatsAppHeader({ host, onBack, tone = 'light' }: Props) {
           onClick={onBack}
           aria-label={intl.formatMessage({ id: 'backBtn' })}
           style={{
-            border: 0, background: 'transparent', color: ink, padding: 4, cursor: 'pointer',
+            border: 0, background: 'transparent', color: ink, padding: t.space.xs, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 2,
           }}
         >
@@ -47,21 +49,21 @@ export function WhatsAppHeader({ host, onBack, tone = 'light' }: Props) {
           width: 32, height: 32, borderRadius: '50%',
           background: 'linear-gradient(135deg, oklch(0.78 0.08 60), oklch(0.62 0.10 40))',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#fff', fontSize: 13, fontWeight: 600, letterSpacing: 0.3,
+          color: '#fff', fontSize: t.fontSize.base, fontWeight: t.fontWeight.semibold, letterSpacing: 0.3,
           flexShrink: 0,
         }}
       >
         {initials}
       </div>
       <div style={{ flex: 1, lineHeight: 1.2, minWidth: 0 }}>
-        <div style={{ fontSize: 10, color: muted, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+        <div style={{ fontSize: t.fontSize.xs, color: muted, fontFamily: t.font.mono, textTransform: 'uppercase', letterSpacing: 0.8 }}>
           {intl.formatMessage({ id: 'continuing' })}
         </div>
-        <div style={{ fontSize: 14, fontWeight: 600, color: ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontSize: t.fontSize.md, fontWeight: t.fontWeight.semibold, color: ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {host}
         </div>
       </div>
-      <div style={{ color: muted, display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
+      <div style={{ color: muted, display: 'flex', alignItems: 'center', gap: t.space.xs, fontSize: t.fontSize.xs, fontFamily: t.font.mono }}>
         <Icon.lock size={11} />
         <span>SSL</span>
       </div>

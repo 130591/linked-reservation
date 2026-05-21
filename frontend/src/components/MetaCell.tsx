@@ -1,4 +1,4 @@
-import { D1 } from './theme'
+import { useTheme, recipes } from '../theme'
 
 interface Props {
   k: string
@@ -6,10 +6,11 @@ interface Props {
 }
 
 export function MetaCell({ k, v }: Props) {
+  const t = useTheme()
   return (
     <div>
-      <div style={{ fontSize: 10, color: D1.muted, textTransform: 'uppercase', letterSpacing: 0.6, fontWeight: 500 }}>{k}</div>
-      <div style={{ fontSize: 14, fontWeight: 600, marginTop: 2 }}>{v}</div>
+      <div style={recipes.caption(t)}>{k}</div>
+      <div style={{ fontSize: t.fontSize.md, fontWeight: t.fontWeight.semibold, marginTop: 2 }}>{v}</div>
     </div>
   )
 }
