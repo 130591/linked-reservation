@@ -1,31 +1,25 @@
 import { useIntl } from 'react-intl'
-import { D1 } from '../components/theme'
+import { useTheme, recipes } from '../theme'
 
 export function ExpiredRoute() {
   const intl = useIntl()
+  const t = useTheme()
 
   return (
     <div
       style={{
-        height: '100%',
-        background: D1.bg,
-        color: D1.ink,
-        fontFamily: D1.sans,
-        display: 'flex',
-        flexDirection: 'column',
+        ...recipes.pageShell(t),
         alignItems: 'center',
         justifyContent: 'center',
         padding: '0 24px',
         textAlign: 'center',
       }}
     >
-      <div style={{ fontSize: 40, marginBottom: 16 }}>⏱</div>
-      <h1
-        style={{ fontSize: 22, fontWeight: 600, letterSpacing: -0.2, lineHeight: 1.2, marginBottom: 8 }}
-      >
+      <div style={{ fontSize: 40, marginBottom: t.space.lg }}>⏱</div>
+      <h1 style={{ ...recipes.stepTitle(t), marginBottom: t.space.sm }}>
         {intl.formatMessage({ id: 'sessionExpiredTitle' })}
       </h1>
-      <p style={{ fontSize: 14, color: D1.muted, maxWidth: 280, lineHeight: 1.5, margin: '0 0 24px' }}>
+      <p style={{ fontSize: t.fontSize.md, color: t.color.muted, maxWidth: 280, lineHeight: 1.5, margin: '0 0 24px' }}>
         {intl.formatMessage({ id: 'sessionExpiredSub' })}
       </p>
     </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useIntl } from 'react-intl'
-import { D1 } from '../components/theme'
+import { useTheme, recipes } from '../theme'
 import { PrimaryBtn } from '../components/PrimaryBtn'
 import { StickyFooter } from '../components/StickyFooter'
 import { Icon } from '../components/Icon'
@@ -19,27 +19,11 @@ interface FormState {
   phone: string
 }
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  border: `1px solid ${D1.hair}`,
-  borderRadius: 8,
-  padding: '11px 12px',
-  fontFamily: D1.sans,
-  fontSize: 14,
-  color: D1.ink,
-  background: D1.bg,
-  outline: 'none',
-}
-
-const errorInputStyle: React.CSSProperties = {
-  ...inputStyle,
-  borderColor: '#c0392b',
-}
-
 function FieldError({ id }: { id: string }) {
   const intl = useIntl()
+  const t = useTheme()
   return (
-    <div role="alert" style={{ fontSize: 11, color: '#c0392b', marginTop: 4 }}>
+    <div role="alert" style={{ fontSize: t.fontSize.sm, color: t.color.error, marginTop: t.space.xs }}>
       {intl.formatMessage({ id })}
     </div>
   )
@@ -47,6 +31,7 @@ function FieldError({ id }: { id: string }) {
 
 export function GuestDetailsStep({ onNext, onBack }: Props) {
   const intl = useIntl()
+  const t = useTheme()
   const { setGuestDetails } = useBooking()
 
   const [form, setForm] = useState<FormState>({ name: '', email: '', phone: '' })
@@ -92,28 +77,28 @@ export function GuestDetailsStep({ onNext, onBack }: Props) {
   }
 
   const labelStyle: React.CSSProperties = {
-    fontSize: 11, color: D1.muted, fontWeight: 500, marginBottom: 5,
+    fontSize: t.fontSize.sm, color: t.color.muted, fontWeight: t.fontWeight.medium, marginBottom: 5,
   }
+
+  const baseInput = recipes.inputBase(t)
+  const errorInput = recipes.inputError(t)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ flex: 1, overflow: 'auto', padding: '18px 20px 20px' }}>
-        <button
-          onClick={onBack}
-          style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: D1.muted, fontSize: 13, display: 'flex', alignItems: 'center', gap: 4, marginBottom: 16 }}
-        >
+        <button onClick={onBack} style={recipes.backButton(t)}>
           <Icon.back size={14} /> {intl.formatMessage({ id: 'backBtn' })}
         </button>
 
-        <div style={{ fontSize: 22, lineHeight: 1.2, fontWeight: 600, letterSpacing: -0.2 }}>
+        <div style={recipes.stepTitle(t)}>
           {intl.formatMessage({ id: 'guestDataTitle' })}
         </div>
-        <div style={{ fontSize: 13, color: D1.muted, marginTop: 4, marginBottom: 20 }}>
+        <div style={{ ...recipes.subtitle(t), marginBottom: t.space.xl }}>
           {intl.formatMessage({ id: 'guestDataSub' })}
         </div>
 
         {/* Name */}
-        <div style={{ marginBottom: 12 }}>
+        <div style={{ marginBottom: t.space.md }}>
           <div style={labelStyle}>{intl.formatMessage({ id: 'fullName' })}</div>
           <input
             value={form.name}
@@ -122,13 +107,13 @@ export function GuestDetailsStep({ onNext, onBack }: Props) {
             onBlur={() => handleBlur('name')}
             aria-label={intl.formatMessage({ id: 'fullName' })}
             aria-invalid={!!errors.name}
-            style={errors.name ? errorInputStyle : inputStyle}
+            style={errors.name ? errorInput : baseInput}
           />
           {errors.name && <FieldError id={errors.name} />}
         </div>
 
         {/* Email */}
-        <div style={{ marginBottom: 12 }}>
+        <div style={{ marginBottom: t.space.md }}>
           <div style={labelStyle}>{intl.formatMessage({ id: 'email' })}</div>
           <input
             type="email"
@@ -138,13 +123,13 @@ export function GuestDetailsStep({ onNext, onBack }: Props) {
             onBlur={() => handleBlur('email')}
             aria-label={intl.formatMessage({ id: 'email' })}
             aria-invalid={!!errors.email}
-            style={errors.email ? errorInputStyle : inputStyle}
+            style={errors.email ? errorInput : baseInput}
           />
           {errors.email && <FieldError id={errors.email} />}
         </div>
 
         {/* Phone */}
-        <div style={{ marginBottom: 12 }}>
+        <div style={{ marginBottom: t.space.md }}>
           <div style={labelStyle}>{intl.formatMessage({ id: 'phone' })}</div>
           <input
             type="tel"
@@ -154,10 +139,10 @@ export function GuestDetailsStep({ onNext, onBack }: Props) {
             onBlur={() => handleBlur('phone')}
             aria-label={intl.formatMessage({ id: 'phone' })}
             aria-invalid={!!errors.phone}
-            style={errors.phone ? errorInputStyle : inputStyle}
+            style={errors.phone ? errorInput : baseInput}
           />
           {intl.formatMessage({ id: 'phoneHint' }) && (
-            <div style={{ fontSize: 11, color: D1.muted, marginTop: 4 }}>
+            <div style={{ fontSize: t.fontSize.sm, color: t.color.muted, marginTop: t.space.xs }}>
               {intl.formatMessage({ id: 'phoneHint' })}
             </div>
           )}

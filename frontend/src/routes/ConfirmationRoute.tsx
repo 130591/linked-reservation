@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useIntl } from 'react-intl'
 import { useSession } from '../context/SessionContext'
-import { D1 } from '../components/theme'
+import { useTheme, recipes } from '../theme'
 import { WhatsAppHeader } from '../components/WhatsAppHeader'
 import { Icon } from '../components/Icon'
 import { SummaryRow } from '../components/SummaryRow'
@@ -105,27 +105,23 @@ function CalGlyph({ type }: { type: 'google' | 'apple' | 'outlook' | 'ics' }) {
 
 function TokenErrorScreen() {
   const intl = useIntl()
+  const t = useTheme()
   return (
     <div
       data-testid="token-error-screen"
       style={{
-        height: '100%',
-        background: D1.bg,
-        color: D1.ink,
-        fontFamily: D1.sans,
-        display: 'flex',
-        flexDirection: 'column',
+        ...recipes.pageShell(t),
         alignItems: 'center',
         justifyContent: 'center',
         padding: '0 24px',
         textAlign: 'center',
       }}
     >
-      <div style={{ fontSize: 40, marginBottom: 16 }}>🔗</div>
-      <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: -0.2, lineHeight: 1.2, marginBottom: 8 }}>
+      <div style={{ fontSize: 40, marginBottom: t.space.lg }}>🔗</div>
+      <h1 style={{ ...recipes.stepTitle(t), marginBottom: t.space.sm }}>
         {intl.formatMessage({ id: 'tokenErrorTitle' })}
       </h1>
-      <p style={{ fontSize: 14, color: D1.muted, maxWidth: 280, lineHeight: 1.5, margin: 0 }}>
+      <p style={{ fontSize: t.fontSize.md, color: t.color.muted, maxWidth: 280, lineHeight: 1.5, margin: 0 }}>
         {intl.formatMessage({ id: 'tokenErrorSub' })}
       </p>
     </div>
@@ -135,6 +131,7 @@ function TokenErrorScreen() {
 export function ConfirmationRoute() {
   const { client } = useSession()
   const intl = useIntl()
+  const t = useTheme()
   const [calOpen, setCalOpen] = useState(false)
 
   const { data, isLoading, error } = useQuery({
@@ -160,13 +157,13 @@ export function ConfirmationRoute() {
       <div
         style={{
           height: '100%',
-          background: D1.bg,
+          background: t.color.bg,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <div style={{ fontSize: 14, color: D1.muted }}>...</div>
+        <div style={{ fontSize: t.fontSize.md, color: t.color.muted }}>...</div>
       </div>
     )
   }
@@ -185,16 +182,7 @@ export function ConfirmationRoute() {
     : intl.formatMessage({ id: 'people' })
 
   return (
-    <div
-      style={{
-        height: '100%',
-        background: D1.bg,
-        color: D1.ink,
-        fontFamily: D1.sans,
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
+    <div style={recipes.pageShell(t)}>
       <WhatsAppHeader host={data.property.name} />
 
       <div
@@ -211,8 +199,8 @@ export function ConfirmationRoute() {
             width: 52,
             height: 52,
             borderRadius: '50%',
-            background: D1.accent,
-            color: D1.accentInk,
+            background: t.color.accent,
+            color: t.color.accentInk,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -221,45 +209,34 @@ export function ConfirmationRoute() {
           <Icon.check size={24} />
         </div>
 
-        <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: -0.2, lineHeight: 1.2, margin: 0 }}>
+        <h1 style={{ ...recipes.stepTitle(t), margin: 0 }}>
           {intl.formatMessage({ id: 'confirmedTitle' })}
         </h1>
-        <p style={{ fontSize: 13, color: D1.muted, marginTop: 6, maxWidth: 280, margin: '6px auto 0' }}>
+        <p style={{ fontSize: t.fontSize.base, color: t.color.muted, marginTop: 6, maxWidth: 280, margin: '6px auto 0' }}>
           {intl.formatMessage({ id: 'confirmedSub' })}
         </p>
 
         <div
           style={{
+            ...recipes.cardBox(t),
             margin: '22px 0',
-            border: `1px solid ${D1.hair}`,
-            borderRadius: 10,
-            padding: '14px',
-            background: D1.surface,
             textAlign: 'left',
           }}
         >
           <div
             style={{
               textAlign: 'center',
-              paddingBottom: 12,
-              borderBottom: `1px solid ${D1.hair}`,
-              marginBottom: 12,
+              paddingBottom: t.space.md,
+              borderBottom: `1px solid ${t.color.hair}`,
+              marginBottom: t.space.md,
             }}
           >
-            <div
-              style={{
-                fontSize: 10,
-                color: D1.muted,
-                textTransform: 'uppercase',
-                letterSpacing: 0.6,
-                fontWeight: 500,
-              }}
-            >
+            <div style={recipes.caption(t)}>
               {intl.formatMessage({ id: 'bookingCode' })}
             </div>
             <div
               data-testid="booking-reference"
-              style={{ fontSize: 22, fontWeight: 700, letterSpacing: 2, marginTop: 4 }}
+              style={{ fontSize: t.fontSize.h2, fontWeight: t.fontWeight.bold, letterSpacing: 2, marginTop: t.space.xs }}
             >
               {data.bookingReference}
             </div>
@@ -278,13 +255,13 @@ export function ConfirmationRoute() {
           />
         </div>
 
-        <div style={{ fontSize: 12, color: D1.muted, textAlign: 'center' }}>
-          {intl.formatMessage({ id: 'totalLabel' })}: <strong style={{ color: D1.ink }}>{formatBRL(data.totalPaid.amount)}</strong>
+        <div style={{ fontSize: 12, color: t.color.muted, textAlign: 'center' }}>
+          {intl.formatMessage({ id: 'totalLabel' })}: <strong style={{ color: t.color.ink }}>{formatBRL(data.totalPaid.amount)}</strong>
         </div>
       </div>
 
       <StickyFooter>
-        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
           <PrimaryBtn full onClick={() => window.open(waUrl, '_blank')}>
             <Icon.whatsapp size={14} /> {intl.formatMessage({ id: 'backToChat' })}
           </PrimaryBtn>
@@ -294,21 +271,21 @@ export function ConfirmationRoute() {
         </div>
       </StickyFooter>
 
-      <PhoneSheet open={calOpen} onClose={() => setCalOpen(false)} bg={D1.bg} ink={D1.ink}>
+      <PhoneSheet open={calOpen} onClose={() => setCalOpen(false)}>
         <div style={{ padding: '4px 0 0' }}>
           <div style={{ padding: '0 20px 10px' }}>
-            <div style={{ fontSize: 17, fontWeight: 600 }}>
+            <div style={{ fontSize: 17, fontWeight: t.fontWeight.semibold }}>
               {intl.formatMessage({ id: 'calendarTitle' })}
             </div>
-            <div style={{ fontSize: 12, color: D1.muted, marginTop: 2 }}>
+            <div style={{ fontSize: 12, color: t.color.muted, marginTop: 2 }}>
               {intl.formatMessage({ id: 'calendarSub' })}
             </div>
           </div>
-          <div style={{ borderTop: `1px solid ${D1.hairSoft}` }}>
-            <CalRow icon={<CalGlyph type="google" />} label={intl.formatMessage({ id: 'googleCal' })} href={buildGoogleCalUrl(data)} />
-            <CalRow icon={<CalGlyph type="apple" />} label={intl.formatMessage({ id: 'appleCal' })} href={icsUrl ?? '#'} download="linked-reservation.ics" />
-            <CalRow icon={<CalGlyph type="outlook" />} label={intl.formatMessage({ id: 'outlookCal' })} href={buildOutlookUrl(data)} />
-            <CalRow icon={<CalGlyph type="ics" />} label={intl.formatMessage({ id: 'downloadIcs' })} href={icsUrl ?? '#'} download="linked-reservation.ics" />
+          <div style={{ borderTop: `1px solid ${t.color.hairSoft}` }}>
+            <CalRow t={t} icon={<CalGlyph type="google" />} label={intl.formatMessage({ id: 'googleCal' })} href={buildGoogleCalUrl(data)} />
+            <CalRow t={t} icon={<CalGlyph type="apple" />} label={intl.formatMessage({ id: 'appleCal' })} href={icsUrl ?? '#'} download="linked-reservation.ics" />
+            <CalRow t={t} icon={<CalGlyph type="outlook" />} label={intl.formatMessage({ id: 'outlookCal' })} href={buildOutlookUrl(data)} />
+            <CalRow t={t} icon={<CalGlyph type="ics" />} label={intl.formatMessage({ id: 'downloadIcs' })} href={icsUrl ?? '#'} download="linked-reservation.ics" />
           </div>
           <div style={{ padding: '12px 20px 0' }}>
             <button
@@ -317,10 +294,10 @@ export function ConfirmationRoute() {
                 width: '100%',
                 padding: '12px',
                 border: 0,
-                borderRadius: 10,
+                borderRadius: t.radius.lg,
                 background: 'transparent',
-                color: D1.muted,
-                fontSize: 13,
+                color: t.color.muted,
+                fontSize: t.fontSize.base,
                 cursor: 'pointer',
               }}
             >
@@ -333,7 +310,7 @@ export function ConfirmationRoute() {
   )
 }
 
-function CalRow({ icon, label, href, download }: { icon: React.ReactNode; label: string; href: string; download?: string }) {
+function CalRow({ t, icon, label, href, download }: { t: ReturnType<typeof useTheme>; icon: React.ReactNode; label: string; href: string; download?: string }) {
   return (
     <a
       href={href}
@@ -344,18 +321,18 @@ function CalRow({ icon, label, href, download }: { icon: React.ReactNode; label:
         width: '100%',
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
+        gap: t.space.md,
         padding: '14px 16px',
-        background: D1.bg,
+        background: t.color.bg,
         textDecoration: 'none',
-        borderBottom: `1px solid ${D1.hairSoft}`,
-        color: D1.ink,
+        borderBottom: `1px solid ${t.color.hairSoft}`,
+        color: t.color.ink,
       }}
     >
-      <div style={{ width: 36, height: 36, borderRadius: 8, background: D1.surface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 36, height: 36, borderRadius: t.radius.md, background: t.color.surface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {icon}
       </div>
-      <div style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{label}</div>
+      <div style={{ flex: 1, fontSize: t.fontSize.md, fontWeight: t.fontWeight.medium }}>{label}</div>
       <Icon.arrow size={13} />
     </a>
   )

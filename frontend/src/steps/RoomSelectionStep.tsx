@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useIntl } from 'react-intl'
-import { D1 } from '../components/theme'
+import { useTheme, recipes } from '../theme'
 import { Icon } from '../components/Icon'
 import { Pill } from '../components/Pill'
 import { RoomPlaceholder } from '../components/RoomPlaceholder'
@@ -19,6 +19,7 @@ function brl(cents: number): string {
 
 export function RoomSelectionStep({ onNext }: Props) {
   const intl = useIntl()
+  const t = useTheme()
   const { client } = useSession()
   const { setSelectedRoom } = useBooking()
 
@@ -35,19 +36,18 @@ export function RoomSelectionStep({ onNext }: Props) {
 
   if (isLoading) {
     return (
-      <div style={{ padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-        <p style={{ color: D1.muted, fontSize: 14 }}>{intl.formatMessage({ id: 'loadingRooms' })}</p>
+      <div style={{ padding: t.space.xl, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+        <p style={{ color: t.color.muted, fontSize: t.fontSize.md }}>{intl.formatMessage({ id: 'loadingRooms' })}</p>
       </div>
     )
   }
 
-  // Session expired — global handler is navigating to /booking/expired; render nothing in the meantime
   if (error instanceof SessionExpiredError) return null
 
   if (error || !rooms) {
     return (
-      <div style={{ padding: '20px' }}>
-        <p style={{ color: '#c0392b', fontSize: 14 }}>{intl.formatMessage({ id: 'errorLoadingRooms' })}</p>
+      <div style={{ padding: t.space.xl }}>
+        <p style={{ color: t.color.error, fontSize: t.fontSize.md }}>{intl.formatMessage({ id: 'errorLoadingRooms' })}</p>
       </div>
     )
   }
@@ -55,10 +55,10 @@ export function RoomSelectionStep({ onNext }: Props) {
   return (
     <div>
       <div style={{ padding: '18px 20px 10px' }}>
-        <div style={{ fontSize: 22, lineHeight: 1.2, fontWeight: 600, letterSpacing: -0.2 }}>
+        <div style={recipes.stepTitle(t)}>
           {intl.formatMessage({ id: 'chooseRoom' })}
         </div>
-        <div style={{ fontSize: 13, color: D1.muted, marginTop: 4, marginBottom: 16 }}>
+        <div style={{ ...recipes.subtitle(t), marginBottom: t.space.lg }}>
           {intl.formatMessage({ id: 'chooseRoomSub' })}
         </div>
       </div>
@@ -70,31 +70,31 @@ export function RoomSelectionStep({ onNext }: Props) {
             onClick={() => handleSelect(room)}
             style={{
               cursor: 'pointer',
-              border: `1px solid ${D1.hair}`,
-              borderRadius: 12,
-              background: D1.bg,
+              border: `1px solid ${t.color.hair}`,
+              borderRadius: t.radius.xl,
+              background: t.color.bg,
               overflow: 'hidden',
             }}
           >
             <RoomPlaceholder hueA={room.hueA} hueB={room.hueB} label={room.name} height={170} variant="square" />
             <div style={{ padding: '14px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                <div style={{ fontSize: 16, fontWeight: 600 }}>{room.name}</div>
+                <div style={{ fontSize: t.fontSize.lg, fontWeight: t.fontWeight.semibold }}>{room.name}</div>
                 {room.tag && <Pill>{room.tag}</Pill>}
               </div>
-              <div style={{ fontSize: 13, color: D1.muted, marginTop: 2, lineHeight: 1.4 }}>{room.short}</div>
+              <div style={{ fontSize: t.fontSize.base, color: t.color.muted, marginTop: 2, lineHeight: 1.4 }}>{room.short}</div>
               <div style={{
-                marginTop: 12, paddingTop: 12, borderTop: `1px solid ${D1.hairSoft}`,
+                marginTop: t.space.md, paddingTop: t.space.md, borderTop: `1px solid ${t.color.hairSoft}`,
                 display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
               }}>
                 <div>
-                  <span style={{ fontSize: 17, fontWeight: 600 }}>{brl(room.pricePerNight)}</span>
-                  <span style={{ fontSize: 12, color: D1.muted, marginLeft: 4 }}>/ {intl.formatMessage({ id: 'perNight' })}</span>
+                  <span style={{ fontSize: 17, fontWeight: t.fontWeight.semibold }}>{brl(room.pricePerNight)}</span>
+                  <span style={{ fontSize: 12, color: t.color.muted, marginLeft: t.space.xs }}>/ {intl.formatMessage({ id: 'perNight' })}</span>
                 </div>
                 <span
                   style={{
-                    fontSize: 12, color: D1.ink, fontWeight: 500,
-                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    fontSize: 12, color: t.color.ink, fontWeight: t.fontWeight.medium,
+                    display: 'inline-flex', alignItems: 'center', gap: t.space.xs,
                   }}
                 >
                   {intl.formatMessage({ id: 'continueBtn' })} <Icon.arrow size={12} />

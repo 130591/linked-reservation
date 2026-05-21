@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { useIntl } from 'react-intl'
-import { D1 } from '../components/theme'
+import { useTheme } from '../theme'
 import { PrimaryBtn } from '../components/PrimaryBtn'
 import { Icon } from '../components/Icon'
 
 function StripeFormInner() {
   const intl = useIntl()
+  const t = useTheme()
   const stripe = useStripe()
   const elements = useElements()
   const [error, setError] = useState<string | null>(null)
@@ -28,18 +29,17 @@ function StripeFormInner() {
       setError(result.error.message ?? intl.formatMessage({ id: 'paymentFailed' }))
       setSubmitting(false)
     }
-    // On success without redirect: webhook fires → polling detects succeeded → navigate
   }
 
   return (
     <div>
       <PaymentElement />
       {error && (
-        <div role="alert" style={{ fontSize: 12, color: '#c0392b', marginTop: 8 }}>
+        <div role="alert" style={{ fontSize: 12, color: t.color.error, marginTop: t.space.sm }}>
           {error}
         </div>
       )}
-      <div style={{ marginTop: 16 }}>
+      <div style={{ marginTop: t.space.lg }}>
         <PrimaryBtn onClick={handlePay} disabled={submitting} full>
           {submitting
             ? intl.formatMessage({ id: 'processing' })
@@ -50,7 +50,7 @@ function StripeFormInner() {
       <div
         style={{
           display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center',
-          marginTop: 14, fontSize: 11, color: D1.muted,
+          marginTop: 14, fontSize: t.fontSize.sm, color: t.color.muted,
         }}
       >
         <Icon.lock size={12} /> {intl.formatMessage({ id: 'securePayment' })}

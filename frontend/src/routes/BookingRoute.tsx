@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useIntl } from 'react-intl'
-import { D1 } from '../components/theme'
+import { useTheme, recipes } from '../theme'
 import { WhatsAppHeader } from '../components/WhatsAppHeader'
 import { StepDots } from '../components/StepDots'
 import { useSession } from '../context/SessionContext'
@@ -21,6 +21,7 @@ function WizardShell({
   children: React.ReactNode
 }) {
   const intl = useIntl()
+  const t = useTheme()
   const { expiresAt } = useSession()
   const { remainingSeconds } = useCountdown(expiresAt)
 
@@ -28,22 +29,13 @@ function WizardShell({
   const seconds = String(remainingSeconds % 60).padStart(2, '0')
 
   return (
-    <div
-      style={{
-        height: '100%',
-        background: D1.bg,
-        color: D1.ink,
-        fontFamily: D1.sans,
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
+    <div style={recipes.pageShell(t)}>
       <WhatsAppHeader host="Linked Reservation" />
       <div
         style={{
           padding: '12px 20px 10px',
-          borderBottom: `1px solid ${D1.hairSoft}`,
-          background: D1.bg,
+          borderBottom: `1px solid ${t.color.hairSoft}`,
+          background: t.color.bg,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -53,7 +45,7 @@ function WizardShell({
         {expiresAt && (
           <div
             data-testid="countdown"
-            style={{ fontSize: 11, color: D1.muted, fontVariantNumeric: 'tabular-nums' }}
+            style={{ fontSize: t.fontSize.sm, color: t.color.muted, fontVariantNumeric: 'tabular-nums' }}
           >
             {intl.formatMessage({ id: 'minutesRemaining' }, { minutes, seconds })}
           </div>
